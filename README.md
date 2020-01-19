@@ -8,4 +8,4 @@ A node server, serving an api that takes in a physicalRestaurantId (Store) and d
 4. Converts to .csv
 5. Starts an instance of R Studio
 6. Runs code to extract association rules 
-7. Returns these as a response in JSON format
+7. Returns the rules as a response in JSON format
