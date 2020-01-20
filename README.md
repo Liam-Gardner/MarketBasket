@@ -19,7 +19,8 @@ USE flipdishlocal
 
 # SQL Joins
 
-```SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId, oi.MenuItemId, pr.MenuId
+```
+SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId, oi.MenuItemId, pr.MenuId
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
