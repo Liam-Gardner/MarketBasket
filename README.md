@@ -34,9 +34,8 @@ ORDER BY o.OrderId ASC
 
 
 # Apriori Format
+Using MenuItem Name:
 ```
--- create Apriori format
--- TODO: swap or add another column with tt2.MenuItemId
 SELECT DISTINCT tt2.Order_OrderId,
 	SUBSTRING(
 		(
@@ -51,6 +50,20 @@ FROM dbo.tmp_table tt2
 ORDER BY Order_OrderId
 ```
 
-
+Using MenuItemId
+```
+SELECT DISTINCT tt2.Order_OrderId,
+	SUBSTRING(
+		(
+			SELECT ','+tt1.MenuItemId AS [text()]
+			FROM dbo.tmp_table tt1
+			WHERE tt1.Order_OrderId = tt2.Order_OrderId
+			ORDER BY tt1.Order_OrderId
+			FOR XML PATH ('')
+		), 2, 1000
+	) [OrderItems]
+FROM dbo.tmp_table tt2
+ORDER BY Order_OrderId
+```
 
 
