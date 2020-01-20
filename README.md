@@ -18,9 +18,10 @@ USE flipdishlocal
 ```
 
 # SQL Joins
-
+Example using 2029 as StoreId
 ```
-SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId, oi.MenuItemId, pr.MenuId
+SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId as mi, oi.MenuItemId, pr.MenuId
+INTO OrdersByStore_tmp
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
@@ -34,7 +35,7 @@ ORDER BY o.OrderId ASC
 --join menuitems
 SELECT oi.Order_OrderId, mi.Name, oi.MenuItemId
 INTO tmp_table
-FROM OrderItems oi
+FROM OrdersByStore_tmp oi
 JOIN MenuItems mi ON oi.MenuItemId = mi.MenuItemId
 
 -- create Apriori format
