@@ -21,6 +21,10 @@ USE flipdishlocal
 Example using 2029 as StoreId
 
 ```
+EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId = 2029
+```
+
+```
 SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId as mi, oi.MenuItemId, pr.MenuId
 INTO OrdersByStore_tmp
 FROM PhysicalRestaurants pr
@@ -35,6 +39,10 @@ ORDER BY o.OrderId ASC
 
 # Apriori Format
 Using MenuItem Name:
+```
+EXEC dbo.usp_CreateAprioriFormat
+```
+
 ```
 SELECT DISTINCT tt2.Order_OrderId,
 	SUBSTRING(
