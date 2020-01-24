@@ -24,54 +24,60 @@ Example using 2029 as StoreId
 EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId = 2029
 ```
 
+Using MenuItem Name:
 ```
-SELECT pr.Name as StoreName, o.OrderId, oi.Order_OrderId, mi.Name, mi.MenuItemId as mi, oi.MenuItemId, pr.MenuId
+CREATE PROCEDURE usp_CreateTempOrdersByStoreTable @StoreId INT
+AS
+SELECT o.OrderId, mi.Name
 INTO OrdersByStore_tmp
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
 JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = 2029
+WHERE pr.PhysicalRestaurantId = @StoreId
 ORDER BY o.OrderId ASC
+GO
+```
+
+Using MenuItem Id:
+```
+CREATE PROCEDURE usp_CreateTempOrdersByStoreTable @StoreId INT
+AS
+SELECT o.OrderId, mi.MenuItemId
+INTO OrdersByStore_tmp
+FROM PhysicalRestaurants pr
+JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
+JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
+JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
+WHERE pr.PhysicalRestaurantId = @StoreId
+ORDER BY o.OrderId ASC
+GO
 ```
 
 
 
 # Apriori Format
-Using MenuItem Name:
 ```
 EXEC dbo.usp_CreateAprioriFormat
 ```
 
 ```
-SELECT DISTINCT tt2.Order_OrderId,
+CREATE PROC usp_CreateAprioriFormat
+AS
+SELECT DISTINCT tt2.OrderId,
 	SUBSTRING(
 		(
 			SELECT ','+tt1.Name AS [text()]
-			FROM dbo.tmp_table tt1
-			WHERE tt1.Order_OrderId = tt2.Order_OrderId
-			ORDER BY tt1.Order_OrderId
+			FROM OrdersByStore_tmp tt1
+			WHERE tt1.OrderId = tt2.OrderId
+			ORDER BY tt1.OrderId
 			FOR XML PATH ('')
 		), 2, 1000
 	) [OrderItems]
-FROM dbo.tmp_table tt2
-ORDER BY Order_OrderId
-```
-
-Using MenuItemId
-```
-SELECT DISTINCT tt2.Order_OrderId,
-	SUBSTRING(
-		(
-			SELECT ','+tt1.MenuItemId AS [text()]
-			FROM dbo.tmp_table tt1
-			WHERE tt1.Order_OrderId = tt2.Order_OrderId
-			ORDER BY tt1.Order_OrderId
-			FOR XML PATH ('')
-		), 2, 1000
-	) [OrderItems]
-FROM dbo.tmp_table tt2
-ORDER BY Order_OrderId
+	INTO ap_tmp
+FROM OrdersByStore_tmp tt2
+ORDER BY OrderId
+GO
 ```
 
 
