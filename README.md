@@ -47,6 +47,7 @@ CREATE PROCEDURE usp_CreateTempOrdersByStoreTable @StoreId INT
 AS
 SELECT o.OrderId, mi.Name
 INTO OrdersByStore_tmp
+-- this table should be dynamically created from the store id if pos
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
@@ -114,8 +115,8 @@ library(RODBC)
 # connect to db 
 uat_conn = odbcConnect("UAT")
 
-# tmp_table = joined 
-retail <- sqlQuery(uat_conn, "SELECT * FROM OrdersByStore_tmp") # this table should be dynamically created from the store id if pos
+# OrdersByStore_tmp = SQL joined table STORE PROC from usp_CreateTempOrdersByStoreTable 
+retail <- sqlQuery(uat_conn, "SELECT * FROM OrdersByStore_tmp")
 
 # not sure if this step is needed, investigate
 retail_sorted <- retail[order(retail$Order_OrderId),]
@@ -149,6 +150,7 @@ summary(rules)
 # the good stuff! First shows all rules, the second shows top 10
 inspect(rules)
 inspect(rules[1:10])
+
 
 ```
 
