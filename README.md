@@ -43,33 +43,34 @@ EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId = 2029
 
 Using MenuItem Name:
 ```
-CREATE PROCEDURE usp_CreateTempOrdersByStoreTable @StoreId INT
+CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
 AS
+DECLARE @SQL NVARCHAR(MAX) = N'
 SELECT o.OrderId, mi.Name
-INTO OrdersByStore_tmp
--- this table should be dynamically created from the store id if pos
+INTO ' + QUOTENAME(@StoreId) + '
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
 JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = @StoreId
-ORDER BY o.OrderId ASC
-GO
+WHERE pr.PhysicalRestaurantId = @StoreId'
+'
+EXEC(@SQL)
 ```
 
 Using MenuItem Id:
 ```
-CREATE PROCEDURE usp_CreateTempOrdersByStoreTable @StoreId INT
+CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
 AS
+DECLARE @SQL NVARCHAR(MAX) = N'
 SELECT o.OrderId, mi.MenuItemId
-INTO OrdersByStore_tmp
+INTO ' + QUOTENAME(@StoreId) + '
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
 JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = @StoreId
-ORDER BY o.OrderId ASC
-GO
+WHERE pr.PhysicalRestaurantId = @StoreId'
+'
+EXEC(@SQL)
 ```
 
 
