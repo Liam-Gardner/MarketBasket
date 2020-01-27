@@ -1,16 +1,29 @@
 # MarketBasket
 
 # Description
-A node server, serving an api that takes in a physicalRestaurantId (Store) and does the following:
+~~A node server, serving an api that takes in a physicalRestaurantId (Store) and does the following:
 1. Connects to the database
-2. Performs SQL joins on several tables to get all the order items from that restaurant (Store)
+~~2. Performs SQL joins on several tables to get all the order items from that restaurant (Store)
 3. Performs SQL query to get the data into the correct format expected by the Apriori alogrithm
-4. Converts to .csv (or we figure out how to read SQL in R studio!)
+~~4. Converts to .csv (or we figure out how to read SQL in R studio!)
 5. Starts an instance of R Studio
-6. R Studio knows where rules data is stored /api/rules/physicalRestaurantId/rules.csv
+~~6. R Studio knows where rules data is stored /api/rules/physicalRestaurantId/rules.csv
 7. Runs code to extract association rules 
-8. Returns the rules as a response in JSON format
+~~8. Returns the rules as a response in JSON format
 
+# New Description
+Node Server accepts physicalRestaurantId (Store) and does the following:
+1. Opens an instance of R
+2. Passes the storeId to R
+3. Runs R script that:	
+	a.) Connects to db
+	b.) Runs Stored Procedure to join tables to get all order items from that store and saves to table named after the store id
+	c.) Groups order items under one order_id and saves to csv file, again named after the store Id
+	d.) Converts the csv file to correct basket transaction format
+	e.) Runs Apriori algorithm and returns association rules
+	f.) rules are writtten to a file
+	g.) When the process is finished the node server responfs with the contents of the file or parses it to JSON maybe
+	
 # Connect to the database
 Setup DB connection on a Windows machine
 1. Create a data source in Windows by opening Data Sources(ODBC)
