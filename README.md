@@ -12,6 +12,10 @@ Node Server accepts physicalRestaurantId (Store) and opens an instance of R, pas
 	
 # Connect to the database
 Setup DB connection on a Windows machine
+
+Replace this with command line script 
+https://stackoverflow.com/questions/13433371/install-an-odbc-connection-from-cmd-line
+
 1. Create a data source in Windows by opening Data Sources(ODBC)
 2. Click Add
 3. Select SQL Server Native Client
