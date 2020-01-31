@@ -1,0 +1,23 @@
+{
+  "name": "MarketBasket",
+  "version": "1.0.0",
+  "description": "Associaion analysis to provide rules using apriori algorithm",
+  "main": "app.js",
+  "repository": "https://github.com/Liam-Gardner/MarketBasket.git",
+  "author": "Liam Gardner <liam@flipdish.ie>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.2"
+  },
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}
