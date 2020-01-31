@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const morgan = require('morgan');
 
-const api = require('./routes/api/apriori.js');
+const api = require('./routes/api/apriori');
 
 app.use(morgan('dev'));
 app.use(
