@@ -64,10 +64,14 @@ const callR = (path, storeId) => {
 };
 
 const convertRulesToJson = () => {
-  rulesJson = fs.readFile('rules.json');
-  parsedJson = JSON.parse(rulesJson);
-  let lhs = parsedJson.lhs;
-  let rhs = parsedJson.rhs;
+  let data = fs.readFileSync('rules.json', 'utf8');
+  let parsedJson = JSON.parse(data);
+
+  // removes {} from lhs and rhs
+  // may need to remove "" from key & value if returning menu item id's
+  let lhs = parsedJson.lhs.map(str => str.replace(/[{}]/gm, ''));
+  let rhs = parsedJson.rhs.map(str => str.replace(/[{}]/gm, ''));
+
   const keyValPairs = lhs.reduce((obj, value, index) => {
     obj[value] = rhs[index];
     return obj;
@@ -86,6 +90,7 @@ router.post("/test", (req, res, next) => {
         .then(result => {
           console.log("finished with callR: ", result);
           const rules = convertRulesToJson();
+          console.log(rules);
           res.status(200).send(rules);
         })
         .catch(error => {
