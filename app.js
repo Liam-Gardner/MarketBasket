@@ -4,7 +4,6 @@ const app = express();
 const morgan = require('morgan');
 
 const api = require('./routes/api/apriori');
-const test = require('./routes/api/test');
 
 app.use(morgan('dev'));
 app.use(
@@ -28,7 +27,6 @@ app.use((req, res, next) => {
 });
 
 app.use('/apriori', api);
-app.use('/test', test);
 
 //err handling
 app.use((req, res, next) => {

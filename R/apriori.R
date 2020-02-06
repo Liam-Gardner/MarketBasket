@@ -82,5 +82,5 @@ rulesTop10 <- inspect(rules[1:10])
 write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
 
 # write json to file
-rules_json <- toJSON(rulesTop10, indent=0, method="C")
+rules_json <- toJSON(rulesTop10, indent=1, method="C")
 write(rules_json, file="rules.json")
