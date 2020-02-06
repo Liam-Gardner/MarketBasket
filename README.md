@@ -12,6 +12,10 @@ Node Server accepts physicalRestaurantId (Store) and opens an instance of R, pas
 	
 # Connect to the database
 Setup DB connection on a Windows machine
+
+Replace this with command line script 
+https://stackoverflow.com/questions/13433371/install-an-odbc-connection-from-cmd-line
+
 1. Create a data source in Windows by opening Data Sources(ODBC)
 2. Click Add
 3. Select SQL Server Native Client
@@ -44,15 +48,18 @@ Using MenuItem Name:
 ```
 CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
 AS
+DECLARE @PhysicalRestaurantId NVARCHAR(10) = CAST(@StoreId AS NVARCHAR(10));
+DECLARE @DROP_TABLE NVARCHAR(MAX) = N'DROP TABLE IF EXISTS [flipdishlocal].[dbo].' + QUOTENAME(@PhysicalRestaurantId)
 DECLARE @SQL NVARCHAR(MAX) = N'
 SELECT o.OrderId, mi.Name
-INTO ' + QUOTENAME(@StoreId) + '
+INTO ' + QUOTENAME(@PhysicalRestaurantId) + '
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
 JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = @StoreId'
-'
+WHERE pr.PhysicalRestaurantId = ' + (@PhysicalRestaurantId);
+
+EXEC(@DROP_TABLE)
 EXEC(@SQL)
 ```
 
