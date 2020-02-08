@@ -1,8 +1,8 @@
 # rem: with TRUE option below, #args[1] is the "--args" switch; skip it.
 args <- commandArgs(TRUE)
 storeId <- (args[2])
-confidence <- (args[3])
-rulesAmount <- (args[4])
+confidence <- as.numeric((args[3]))
+rulesAmount <- as.numeric((args[4]))
 print(args)
 
 # checks if package is installed and then installs
@@ -54,7 +54,7 @@ colnames(itemList) <- c("items")
 # Kids Pizza    | Meal Deal 3 | Coke
 
 # use store id here to create unique filename
-fn_mba <- cat(storeId, "mba.csv", sep="-")
+fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
 write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 
 # convert the csv to correct basket transaction format
@@ -69,12 +69,12 @@ tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE
 rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
 rules <- sort(rules, by='confidence', decreasing = TRUE)
 
-# List summary of rules - may be good to store these in a log file so we can confirm everything is good
-fn_summary <- cat(storeId, "summary.csv", sep="-")
-write(summary(rules), file=fn_summary)
+# Statistial summary of the rules - store these
+ fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
+ summary_rules <- summary(rules)
+ capture.output(summary_rules, file=fn_summary)
 
-# the good stuff! First shows all rules, the second shows top 10
-# inspect(rules)
+# the good stuff! Capture the rules
 rulesTop10 <- inspect(rules[1:rulesAmount])
 
 # This step is unnecessary, in the next step we convert to JSON and that's all we need.
@@ -82,7 +82,7 @@ rulesTop10 <- inspect(rules[1:rulesAmount])
 
 # write json to file, use storeId as name
 rules_json <- toJSON(rulesTop10, indent=1, method="C")
-fn_rulesJson <- cat(storeId, "rules.json", sep="-")
+fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
 write(rules_json, file=fn_rulesJson)
 
 # delete mba file
