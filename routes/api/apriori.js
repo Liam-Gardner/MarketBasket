@@ -46,7 +46,8 @@ const callR = (path, storeId, confidence, rulesAmount) => {
       '--args',
       storeId,
       confidence,
-      rulesAmount
+      rulesAmount,
+      rulesbyId
     ]);
     child.stderr.on('data', data => {
       console.log(data.toString());
@@ -65,7 +66,7 @@ const callR = (path, storeId, confidence, rulesAmount) => {
   });
 };
 
-const convertRulesToJson = (storeId) => {
+const convertRulesToJson = storeId => {
   let data = fs.readFileSync(`${storeId}-rules.json`, 'utf8');
   let parsedJson = JSON.parse(data);
 
@@ -83,19 +84,14 @@ const convertRulesToJson = (storeId) => {
 
 router.post('/test', (req, res) => {
   // args - storeId, confidence, rulesAmount
-  const { storeId, confidence, rulesAmount  } = req.body
+  const { storeId, confidence, rulesAmount, rulesbyId } = req.body;
   // create the db connection
   setupODBC()
     .then(result => {
       console.log('odbc setup complete ', result);
       console.log('Invoking R script at: ', rscriptPath);
       console.log(req.body);
-      callR(
-        rscriptPath,
-        storeId,
-        confidence,
-        rulesAmount
-      )
+      callR(rscriptPath, storeId, confidence, rulesAmount, rulesbyId)
         .then(result => {
           console.log('finished with callR: ', result);
           const rules = convertRulesToJson(storeId);
