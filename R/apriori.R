@@ -3,6 +3,7 @@ args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
+rulesbyId <- (args[5])
 print(args)
 
 # checks if package is installed and then installs
@@ -31,7 +32,12 @@ uat_conn = odbcConnect("association_rules_api")
 
 
 # Join tables using stored proc.
+if(rulesbyId) {
+sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
+} else {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
+
+} 
 retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
 
 print('retail:')

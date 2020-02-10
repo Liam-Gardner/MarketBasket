@@ -1,7 +1,9 @@
 # MarketBasket
 
 # Description
-Node Server accepts physicalRestaurantId (Store) and opens an instance of R, passes the storeId to R and runs R script that:	
+
+Node Server accepts physicalRestaurantId (Store) and opens an instance of R, passes the storeId to R and runs R script that:
+
 1. Connects to db
 2. Runs Stored Procedure to join tables to get all order items from that store and saves to table named after the store id
 3. Groups order items under one order_id and saves to csv file, again named after the store Id
@@ -9,11 +11,12 @@ Node Server accepts physicalRestaurantId (Store) and opens an instance of R, pas
 5. Runs Apriori algorithm and returns association rules
 6. rules are writtten to a file
 7. When the process is finished the node server responfs with the contents of the file or parses it to JSON maybe
-	
+
 # Connect to the database
+
 Setup DB connection on a Windows machine
 
-Replace this with command line script 
+Replace this with command line script
 https://stackoverflow.com/questions/13433371/install-an-odbc-connection-from-cmd-line
 
 1. Create a data source in Windows by opening Data Sources(ODBC)
@@ -25,19 +28,20 @@ https://stackoverflow.com/questions/13433371/install-an-odbc-connection-from-cmd
 7. Test connection
 
 In R
-``` 
-uat_conn = odbcConnect("UAT") 
+
+```
+uat_conn = odbcConnect("UAT")
 ```
 
 Queries can now be run on the flipdishlocal database
 Example
-``` 
+
+```
 sqlQuery(uat_conn, "SELECT * FROM dbo.Orders")
 ```
 
-
-
 # SQL Joins
+
 Example using 2029 as StoreId
 
 ```
@@ -45,6 +49,7 @@ EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId = 2029
 ```
 
 Using MenuItem Name:
+
 ```
 CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
 AS
@@ -64,25 +69,29 @@ EXEC(@SQL)
 ```
 
 Using MenuItem Id:
+
 ```
-CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
+CREATE PROCEDURE usp_CreateTempOrdersByStoreTable_itemId (@StoreId INT)
 AS
+DECLARE @PhysicalRestaurantId NVARCHAR(10) = CAST(@StoreId AS NVARCHAR(10));
+DECLARE @DROP_TABLE NVARCHAR(MAX) = N'DROP TABLE IF EXISTS [flipdishlocal].[dbo].' + QUOTENAME(@PhysicalRestaurantId)
 DECLARE @SQL NVARCHAR(MAX) = N'
 SELECT o.OrderId, mi.MenuItemId
-INTO ' + QUOTENAME(@StoreId) + '
+INTO ' + QUOTENAME(@PhysicalRestaurantId) + '
 FROM PhysicalRestaurants pr
 JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
 JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
 JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = @StoreId'
-'
+WHERE pr.PhysicalRestaurantId = ' + (@PhysicalRestaurantId);
+
+EXEC(@DROP_TABLE)
 EXEC(@SQL)
 ```
 
-
-
 # Apriori Format
+
 THIS IS NOT NEEDED IF USING R CODE WITH APRIORI BUT MAYBE NEEDED IF USING FP-GROWTH
+
 ```
 EXEC dbo.usp_CreateAprioriFormat
 ```
@@ -107,8 +116,9 @@ GO
 ```
 
 # R Code
+
 ```
- 
+
 # rem: with TRUE option below, #args[1] is the "--args" switch; skip it.
 args <- commandArgs(TRUE)
 storeId <- (args[2])
@@ -135,7 +145,7 @@ usePackage('arulesViz')
 usePackage('plyr')
 usePackage('rjson')
 
-# connect to db 
+# connect to db
 uat_conn = odbcConnect("association_rules_api")
 
 
@@ -193,4 +203,3 @@ write(rules_json, file="rules.json")
 
 
 ```
-
