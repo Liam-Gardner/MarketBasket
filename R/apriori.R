@@ -32,7 +32,7 @@ uat_conn = odbcConnect("association_rules_api")
 
 
 # Join tables using stored proc.
-if(rulesbyId) {
+if(rulesbyId == 'True') {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
 } else {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
