@@ -3,7 +3,7 @@ args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
-rulesbyId <- (args[5])
+rulesById <- (args[5])
 print(args)
 
 # checks if package is installed and then installs
@@ -32,7 +32,7 @@ uat_conn = odbcConnect("association_rules_api")
 
 
 # Join tables using stored proc.
-if(rulesbyId) {
+if(rulesById == 'True') {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
 } else {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
@@ -40,13 +40,13 @@ sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable
 } 
 retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
 
-print('retail:')
-head(retail)
+# print('retail:')
+# head(retail)
 
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
-itemList <- ddply(retail, c("OrderId"), function(df1)paste(df1$Name, collapse = ","))
+itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(rulesById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
 
 # drop OrderId column
 itemList$OrderId <- NULL
