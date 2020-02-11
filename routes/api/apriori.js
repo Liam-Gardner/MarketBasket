@@ -37,7 +37,7 @@ const setupODBC = () => {
 };
 
 const rscriptPath = path.resolve('./', 'R', 'apriori.R');
-const callR = (path, storeId, confidence, rulesAmount, rulesById) => {
+const callR = (path, storeId, confidence, rulesAmount, rulesById, isDemo) => {
   return new Promise((resolve, reject) => {
     let err = false;
     const child = spawn(process.env.RSCRIPT, [
@@ -47,7 +47,8 @@ const callR = (path, storeId, confidence, rulesAmount, rulesById) => {
       storeId,
       confidence,
       rulesAmount,
-      rulesById
+      rulesById,
+      isDemo
     ]);
     child.stderr.on('data', data => {
       console.log(data.toString());
@@ -66,8 +67,9 @@ const callR = (path, storeId, confidence, rulesAmount, rulesById) => {
   });
 };
 
-const convertRulesToJson = storeId => {
-  let data = fs.readFileSync(`${storeId}-rules.json`, 'utf8');
+const convertRulesToJson = (storeId, isDemo) => {
+  console.log('crtoJson', isDemo)
+  let data = isDemo == 'True' ? fs.readFileSync(`demo-rules.json`, 'utf8') : fs.readFileSync(`${storeId}-rules.json`, 'utf8');
   let parsedJson = JSON.parse(data);
 
   // removes {} from lhs and rhs
@@ -83,17 +85,17 @@ const convertRulesToJson = storeId => {
 };
 
 router.post('/test', (req, res) => {
-  // args - storeId, confidence, rulesAmount
-  const { storeId, confidence, rulesAmount, rulesById } = req.body;
+  const { storeId, confidence, rulesAmount, rulesById, isDemo } = req.body;
   // create the db connection
   setupODBC()
     .then(result => {
       console.log('odbc setup complete ', result);
       console.log('Invoking R script at: ', rscriptPath);
-      callR(rscriptPath, storeId, confidence, rulesAmount, rulesById)
+      // execute R code
+      callR(rscriptPath, storeId, confidence, rulesAmount, rulesById, isDemo)
         .then(result => {
           console.log('finished with callR: ', result);
-          const rules = convertRulesToJson(storeId);
+          const rules = convertRulesToJson(storeId, isDemo);
           res.status(200).send(rules);
         })
         .catch(error => {

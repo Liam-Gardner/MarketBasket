@@ -4,6 +4,7 @@ storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
 rulesById <- (args[5])
+isDemo <- (args[6])
 print(args)
 
 # checks if package is installed and then installs
@@ -36,20 +37,36 @@ if(rulesById == 'True') {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
 } else {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
-
 } 
-retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
 
-# print('retail:')
+# demo on all menuitems
+if(isDemo == 'True') {
+  retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demo")
+  # retail <- sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_demoApriori_id")))
+} else {
+  retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
+}
+
+# odbcCloseAll()
+# print(retail)
 # head(retail)
 
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
-itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(rulesById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
+# change if demo
+if(isDemo == 'True') {
+  itemList <- ddply(retail, c("Order_OrderId"), function(df1)paste(df1$MenuItemId, collapse = ","))
+} else {
+  itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(rulesById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
+}
 
 # drop OrderId column
+if(isDemo == 'True') {
+  itemList$Order_OrderId <- NULL
+} else {
 itemList$OrderId <- NULL
+}
 
 # rename remaining column to items
 colnames(itemList) <- c("items")
@@ -60,7 +77,11 @@ colnames(itemList) <- c("items")
 # Kids Pizza    | Meal Deal 3 | Coke
 
 # use store id here to create unique filename
-fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
+if(isDemo == 'True') {
+  fn_mba <- "demo-mba.csv"
+} else {
+  fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
+}
 write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 
 # convert the csv to correct basket transaction format
@@ -76,7 +97,11 @@ rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
 rules <- sort(rules, by='confidence', decreasing = TRUE)
 
 # Statistial summary of the rules - store these
+if(isDemo == 'True') {
+  fn_summary <-"demo-summary.txt"
+} else {
  fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
+}
  summary_rules <- summary(rules)
  capture.output(summary_rules, file=fn_summary)
 
@@ -88,7 +113,12 @@ rulesTop10 <- inspect(rules[1:rulesAmount])
 
 # write json to file, use storeId as name
 rules_json <- toJSON(rulesTop10, indent=1, method="C")
-fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
+if(isDemo == 'True') {
+  fn_rulesJson <- "demo-rules.json"
+} else {
+  fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
+}
+print(fn_rulesJson)
 write(rules_json, file=fn_rulesJson)
 
 # delete mba file
