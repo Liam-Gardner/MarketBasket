@@ -37,7 +37,7 @@ const setupODBC = () => {
 };
 
 const rscriptPath = path.resolve('./', 'R', 'apriori.R');
-const callR = (path, storeId, confidence, rulesAmount) => {
+const callR = (path, storeId, confidence, rulesAmount, rulesById) => {
   return new Promise((resolve, reject) => {
     let err = false;
     const child = spawn(process.env.RSCRIPT, [
@@ -47,7 +47,7 @@ const callR = (path, storeId, confidence, rulesAmount) => {
       storeId,
       confidence,
       rulesAmount,
-      rulesbyId
+      rulesById
     ]);
     child.stderr.on('data', data => {
       console.log(data.toString());
@@ -84,18 +84,16 @@ const convertRulesToJson = storeId => {
 
 router.post('/test', (req, res) => {
   // args - storeId, confidence, rulesAmount
-  const { storeId, confidence, rulesAmount, rulesbyId } = req.body;
+  const { storeId, confidence, rulesAmount, rulesById } = req.body;
   // create the db connection
   setupODBC()
     .then(result => {
       console.log('odbc setup complete ', result);
       console.log('Invoking R script at: ', rscriptPath);
-      console.log(req.body);
-      callR(rscriptPath, storeId, confidence, rulesAmount, rulesbyId)
+      callR(rscriptPath, storeId, confidence, rulesAmount, rulesById)
         .then(result => {
           console.log('finished with callR: ', result);
           const rules = convertRulesToJson(storeId);
-          console.log(rules);
           res.status(200).send(rules);
         })
         .catch(error => {
