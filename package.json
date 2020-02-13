@@ -14,8 +14,11 @@
     "morgan": "^1.9.1",
     "multer": "^1.4.2"
   },
+  "nodemonConfig": {
+    "ignore": ["*.json", "*.csv"]
+ },
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "node server.js"
   },
   "devDependencies": {
     "nodemon": "^2.0.2"
