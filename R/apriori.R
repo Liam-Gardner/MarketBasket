@@ -47,7 +47,7 @@ if(isDemo == 'True') {
   retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
 }
 
-# odbcCloseAll()
+odbcCloseAll()
 # print(retail)
 # head(retail)
 
@@ -56,7 +56,8 @@ if(isDemo == 'True') {
 # 23423         Chicken Balls, Curry Sauce, Chips
 # change if demo
 if(isDemo == 'True') {
-  itemList <- ddply(retail, c("Order_OrderId"), function(df1)paste(df1$MenuItemId, collapse = ","))
+    itemList <- ddply(retail, c("Order_OrderId"), function(df1)paste(if(isDemoById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
+
 } else {
   itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(rulesById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
 }
@@ -106,7 +107,16 @@ if(isDemo == 'True') {
  capture.output(summary_rules, file=fn_summary)
 
 # the good stuff! Capture the rules
-rulesTop10 <- inspect(rules[1:rulesAmount])
+print('trying rulesTop10 now...')
+tryCatch({
+  rulesTop10 <- inspect(rules[1:rulesAmount])
+
+},
+error={
+  print('error. trying to retrieve all rules not just top 10...')
+  rulesTop10 <- inspect(rules[1:])
+}
+)
 
 # This step is unnecessary, in the next step we convert to JSON and that's all we need.
 # write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
