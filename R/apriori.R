@@ -5,6 +5,7 @@ confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
 rulesById <- (args[5])
 isDemo <- (args[6])
+isDemoById <- (args[7])
 print(args)
 
 # checks if package is installed and then installs
@@ -33,6 +34,7 @@ uat_conn = odbcConnect("association_rules_api")
 
 
 # Join tables using stored proc.
+# TODO: Condition to not run this if this isDemo
 if(rulesById == 'True') {
 sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
 } else {
@@ -41,7 +43,11 @@ sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable
 
 # demo on all menuitems
 if(isDemo == 'True') {
-  retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demo")
+  if(isDemoById == 'True'){
+    retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demoById")  
+  } else {
+    retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demo")
+  }
   # retail <- sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_demoApriori_id")))
 } else {
   retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
