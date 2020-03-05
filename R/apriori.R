@@ -3,9 +3,7 @@ args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
-rulesById <- (args[5])
-isDemo <- (args[6])
-isDemoById <- (args[7])
+byItemName <- (args[5])
 print(args)
 
 # checks if package is installed and then installs
@@ -32,25 +30,14 @@ usePackage('rjson')
 # connect to db 
 uat_conn = odbcConnect("association_rules_api")
 
+queryByMenuItemId <- capture.output(cat("SELECT o.OrderId, mi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId =", storeId))
+queryByMenuItemName <- capture.output(cat("SELECT o.OrderId, mi.Name FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId =", storeId))
 
-# Join tables using stored proc.
-# TODO: Condition to not run this if this isDemo
-if(rulesById == 'True') {
-sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable_itemId @StoreId =", storeId)))
+# queryByMenuName
+if(byItemName) {
+  retail <- sqlQuery(uat_conn, queryByMenuItemName)
 } else {
-sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
-} 
-
-# demo on all menuitems
-if(isDemo == 'True') {
-  if(isDemoById == 'True'){
-    retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demoById")  
-  } else {
-    retail <- sqlQuery(uat_conn, "SELECT * FROM tmp_table_demo")
-  }
-  # retail <- sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_demoApriori_id")))
-} else {
-  retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
+  retail <- sqlQuery(uat_conn, queryByMenuItemId)
 }
 
 odbcCloseAll()
@@ -60,20 +47,11 @@ odbcCloseAll()
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
-# change if demo
-if(isDemo == 'True') {
-    itemList <- ddply(retail, c("Order_OrderId"), function(df1)paste(if(isDemoById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
+itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(byItemName == 'True') {df1$Name} else{df1$MenuItemId}, collapse = ","))
 
-} else {
-  itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(rulesById == 'True') {df1$MenuItemId} else{df1$Name}, collapse = ","))
-}
 
 # drop OrderId column
-if(isDemo == 'True') {
-  itemList$Order_OrderId <- NULL
-} else {
 itemList$OrderId <- NULL
-}
 
 # rename remaining column to items
 colnames(itemList) <- c("items")
@@ -84,11 +62,8 @@ colnames(itemList) <- c("items")
 # Kids Pizza    | Meal Deal 3 | Coke
 
 # use store id here to create unique filename
-if(isDemo == 'True') {
-  fn_mba <- "demo-mba.csv"
-} else {
-  fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
-}
+fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
+
 write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 
 # convert the csv to correct basket transaction format
@@ -104,23 +79,19 @@ rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
 rules <- sort(rules, by='confidence', decreasing = TRUE)
 
 # Statistial summary of the rules - store these
-if(isDemo == 'True') {
-  fn_summary <-"demo-summary.txt"
-} else {
- fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
-}
- summary_rules <- summary(rules)
- capture.output(summary_rules, file=fn_summary)
+fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
+summary_rules <- summary(rules)
+capture.output(summary_rules, file=fn_summary)
 
 # the good stuff! Capture the rules
 print('trying rulesTop10 now...')
 tryCatch({
-  rulesTop10 <- inspect(rules[1:rulesAmount])
+  topRules <- inspect(rules[1:rulesAmount])
 
 },
 error={
-  print('error. trying to retrieve all rules not just top 10...')
-  rulesTop10 <- inspect(rules[1:])
+  print('error, trying to retrieve that amount of rules, here is all I got')
+  topRules <- inspect(rules)
 }
 )
 
@@ -128,13 +99,9 @@ error={
 # write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
 
 # write json to file, use storeId as name
-rules_json <- toJSON(rulesTop10, indent=1, method="C")
-if(isDemo == 'True') {
-  fn_rulesJson <- "demo-rules.json"
-} else {
-  fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
-}
-print(fn_rulesJson)
+rules_json <- toJSON(topRules, indent=1, method="C")
+fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
+
 write(rules_json, file=fn_rulesJson)
 
 # delete mba file
