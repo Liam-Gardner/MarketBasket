@@ -45,51 +45,15 @@ sqlQuery(uat_conn, "SELECT * FROM dbo.Orders")
 Example using 2029 as StoreId
 
 ```
-EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId = 2029
-```
-
-Using MenuItem Name:
-
-```
-CREATE PROCEDURE usp_CreateTempOrdersByStoreTable (@StoreId INT)
-AS
-DECLARE @PhysicalRestaurantId NVARCHAR(10) = CAST(@StoreId AS NVARCHAR(10));
-DECLARE @DROP_TABLE NVARCHAR(MAX) = N'DROP TABLE IF EXISTS [flipdishlocal].[dbo].' + QUOTENAME(@PhysicalRestaurantId)
-DECLARE @SQL NVARCHAR(MAX) = N'
-SELECT o.OrderId, mi.Name
-INTO ' + QUOTENAME(@PhysicalRestaurantId) + '
-FROM PhysicalRestaurants pr
-JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
-JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
-JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = ' + (@PhysicalRestaurantId);
-
-EXEC(@DROP_TABLE)
-EXEC(@SQL)
-```
-
-Using MenuItem Id:
-
-```
-CREATE PROCEDURE usp_CreateTempOrdersByStoreTable_itemId (@StoreId INT)
-AS
-DECLARE @PhysicalRestaurantId NVARCHAR(10) = CAST(@StoreId AS NVARCHAR(10));
-DECLARE @DROP_TABLE NVARCHAR(MAX) = N'DROP TABLE IF EXISTS [flipdishlocal].[dbo].' + QUOTENAME(@PhysicalRestaurantId)
-DECLARE @SQL NVARCHAR(MAX) = N'
-SELECT o.OrderId, mi.MenuItemId
-INTO ' + QUOTENAME(@PhysicalRestaurantId) + '
-FROM PhysicalRestaurants pr
-JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
-JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
-JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
-WHERE pr.PhysicalRestaurantId = ' + (@PhysicalRestaurantId);
-
-EXEC(@DROP_TABLE)
-EXEC(@SQL)
+SELECT o.OrderId, mi.MenuItemId 
+FROM PhysicalRestaurants pr 
+JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId 
+JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId 
+JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId 
+WHERE pr.PhysicalRestaurantId = 2029
 ```
 
 # Apriori Format
-
 THIS IS NOT NEEDED IF USING R CODE WITH APRIORI BUT MAYBE NEEDED IF USING FP-GROWTH
 
 ```
@@ -116,90 +80,67 @@ GO
 ```
 
 # R Code
-
+Line by line explanation
 ```
 
-# rem: with TRUE option below, #args[1] is the "--args" switch; skip it.
-args <- commandArgs(TRUE)
-storeId <- (args[2])
-print(args)
+```
+# API 
+## storeId
+##### String
+The physical restaraunt ID. Used in the SQL query and to dynamically name the rules and summary files.
 
-# checks if package is installed and then installs
-usePackage <- function(p) {
-  if (!is.element(p, installed.packages()[,1])) {
-    install.packages(p, dep = TRUE, repos = "http://cran.us.r-project.org")
-  }
-  require(p, character.only = TRUE)
+## confidence
+##### Number
+Specify the level of confidence you want for the rules that are returned. The higher the confidence the more likely a correct item will be suggested. 
+
+## rulesAmount
+##### Number
+There may be thousands of rules found so use this to return for example the top 20 rules. Will return all rules if the number is out of bounds.
+
+## byItemName
+##### Boolean
+The API returns the rules using itemId's. Set this to true if you prefer to have the item names instead.
+
+##### byItemName
+```
+{
+    "Curry Sauce": "Chicken Balls",
+    "Chicken Balls": "Curry Sauce",
+    "Double Pepperoni Deluxe Pizza": "Coke",
+    "Thai Yellow Curry": "Coke",
+    "Chicken": "Coke",
+    "Regular Burger": "Chips",
+    "Hot Dog": "Chilli Sauce",
+    "Chilli Sauce": "Hot Dog",
+    "Chicken,Thai Yellow Curry": "Coke",
+    "Coke,Thai Yellow Curry": "Chicken",
+    "Chicken,Coke": "Thai Yellow Curry",
+    "Hot Dog,Regular Burger": "Chilli Sauce",
+    "Chips,Hot Dog": "Chilli Sauce",
+    "Chilli Sauce,Regular Burger": "Hot Dog",
+    "Chilli Sauce,Chips": "Regular Burger"
 }
+```
 
+##### by Id
 
-# load libraries
-usePackage('RODBC')
-usePackage('tidyverse')
-usePackage('readxl')
-usePackage('knitr')
-usePackage('ggplot2')
-usePackage('lubridate')
-usePackage('arules')
-usePackage('arulesViz')
-usePackage('plyr')
-usePackage('rjson')
-
-# connect to db
-uat_conn = odbcConnect("association_rules_api")
-
-
-# Join tables using stored proc.
-sqlQuery(uat_conn, capture.output(cat("EXEC dbo.usp_CreateTempOrdersByStoreTable @StoreId =", storeId)))
-retail <- sqlQuery(uat_conn, capture.output(cat("SELECT * FROM [flipdishlocal].[dbo].[", storeId, "]", sep="")))
-
-print('retail:')
-head(retail)
-
-# This groups order items under one order_id and into one column seperated by a comma
-# Order_id      Name
-# 23423         Chicken Balls, Curry Sauce, Chips
-itemList <- ddply(retail, c("OrderId"), function(df1)paste(df1$Name, collapse = ","))
-
-# drop OrderId column
-itemList$OrderId <- NULL
-
-# rename remaining column to items
-colnames(itemList) <- c("items")
-
-# write to csv. This will create new column after each comma e.g.
-# Items
-# Chicken Balls | Curry Sauce | Chips
-# Kids Pizza    | Meal Deal 3 | Coke
-
-# use store id here to create unique filename
-write.csv(itemList, "mba.csv", quote=FALSE, row.names = TRUE)
-
-# convert the csv to correct basket transaction format
-# rm.duplicates=TRUE added beacuse it does it anyway, it cant handle quantities witin a transaction so wants to remove duplicates.
-# e.g If the item list is Stuffed Auberginea, Stuffed Auberginea, Stuffed Auberginea, Stuffed Auberginea it would be a waste if time returning a rule saying
-#{Stuffed Auberginea} => {Stuffed Auberginea}
-# imagine suggesting more of the same!
-# file name should be storeId
-tr <- read.transactions("mba.csv", format = 'basket', sep = ',', rm.duplicates=TRUE)
-
-# create rules with support and confidence values
-rules <- apriori(tr, parameter = list(supp=0.001, conf=0.8))
-rules <- sort(rules, by='confidence', decreasing = TRUE)
-
-# List summary of rules - may be good to store these in a log file so we can confirm everything is good
-summary(rules)
-
-# the good stuff! First shows all rules, the second shows top 10
-inspect(rules)
-rulesTop10 <- inspect(rules[1:10])
-
-# This step is unnecessary, in the next step we convert to JSON and that's all we need.
-# write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
-
-# write json to file, use storeId as name
-rules_json <- toJSON(rulesTop10, indent=1, method="C")
-write(rules_json, file="rules.json")
-
-
+```
+{
+    "215": "72",
+    "267": "395",
+    "395": "267",
+    "1473": "4598",
+    "4598": "1473",
+    "18278,909": "6259",
+    "18278,6259": "909",
+    "6259,909": "18278",
+    "215,267": "395",
+    "267,72": "395",
+    "215,395": "267",
+    "395,72": "267",
+    "215,267,72": "395",
+    "215,395,72": "267",
+    "215,267,395": "72",
+    "267,395,72": "215"
+}
 ```

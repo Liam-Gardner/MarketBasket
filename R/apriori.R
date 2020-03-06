@@ -41,14 +41,11 @@ if(byItemName) {
 }
 
 odbcCloseAll()
-# print(retail)
-# head(retail)
 
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
 itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(byItemName == 'True') {df1$Name} else{df1$MenuItemId}, collapse = ","))
-
 
 # drop OrderId column
 itemList$OrderId <- NULL
@@ -60,7 +57,6 @@ colnames(itemList) <- c("items")
 # Items
 # Chicken Balls | Curry Sauce | Chips
 # Kids Pizza    | Meal Deal 3 | Coke
-
 # use store id here to create unique filename
 fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
 
@@ -84,13 +80,12 @@ summary_rules <- summary(rules)
 capture.output(summary_rules, file=fn_summary)
 
 # the good stuff! Capture the rules
-print('trying rulesTop10 now...')
 tryCatch({
   topRules <- inspect(rules[1:rulesAmount])
 
 },
 error={
-  print('error, trying to retrieve that amount of rules, here is all I got')
+  print('error trying to retrieve that amount of rules, here have them all...')
   topRules <- inspect(rules)
 }
 )

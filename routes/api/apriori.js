@@ -93,7 +93,7 @@ router.post('/test', (req, res) => {
       callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
         .then(result => {
           console.log('finished with callR: ', result);
-          const rules = convertRulesToJson(storeId, isDemo);
+          const rules = convertRulesToJson(storeId);
           res.status(200).send(rules);
         })
         .catch(error => {
