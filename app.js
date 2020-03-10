@@ -4,6 +4,7 @@ const app = express();
 const morgan = require('morgan');
 
 const api = require('./routes/api/apriori');
+const api_mb = require('./routes/api/useMetabase');
 
 app.use(morgan('dev'));
 app.use(
@@ -27,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/apriori', api);
+app.use('/useMetabase', api_mb);
 
 //err handling
 app.use((req, res, next) => {
