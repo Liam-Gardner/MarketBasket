@@ -3,6 +3,7 @@ args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
+byItemName <- (args[5])
 print(args)
 
 # checks if package is installed and then installs
@@ -30,6 +31,7 @@ usePackage('rjson')
 # create filename
 data_csv <- capture.output(cat(storeId, "data.csv", sep="-"))
 retail <- read.csv(file = data_csv)
+print(head(retail))
 
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name

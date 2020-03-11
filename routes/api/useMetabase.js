@@ -58,7 +58,7 @@ const setupMetabase = async () => {
     const mbToken = await axios.post(
       'http://localhost:3000/api/session',
       {
-        username: 'liam.gardner@protonmail.com',
+        username: 'liam.gardner@hotmail.com',
         password: 'metabase1'
       },
       { headers: { 'Content-Type': 'application/json' } }
@@ -96,17 +96,23 @@ const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
 router.post('/login', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName } = req.body;
   setupMetabase().then(result => {
-    const mbToken = encodeURIComponent(result.data);
-    res.redirect(
-      `/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
+    const mbToken = encodeURIComponent(result.data.id);
+    res.redirect(307,
+      `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
     );
+ 
   });
 });
 
 router.post('/getRules', (req, res) => {
-  const { mbToken, storeId, confidence, rulesAmount, byItemName } = req.body;
+  const mbToken = req.query.mbToken
+  const storeId = req.query.storeId
+  const confidence = req.query.confidence
+  const rulesAmount = req.query.rulesAmount
+  const byItemName = req.query.byItemName
+  
   sendMetabaseQuery(mbToken, byItemName, storeId)
-    .then(() => {
+    .then((result) => {
       fs.writeFile(`${storeId}-data.csv`, result.data, err => {
         if (err) return console.log(err);
       });
