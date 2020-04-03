@@ -3,7 +3,16 @@ args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
+# if we get the rules by Item name we need to worry about the strings that contain commas or qoutes
+# eg an item could be 15" pizza
+# or Chips, Medium
+# we are splitting based on delimters such as commas when we read in transactions
+# we should strip out commas and maybe the quotes too
+# With quotes we could set quote delimeter = "\"", which means any string in column that has quotes around it is still one string, do not seperate
+# eg this string -> "Coke, chips, burger" is not seperated at the commas
+# we will use quote="" to ignore all qoutes, actually this screws up the json
 byItemName <- (args[5])
+
 print(args)
 
 # checks if package is installed and then installs
@@ -60,6 +69,7 @@ write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 # imagine suggesting more of the same!
 # file name should be storeId
 tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE)
+# quote="\""
 
 # create rules with support and confidence values
 rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
@@ -70,7 +80,19 @@ fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
 summary_rules <- summary(rules)
 capture.output(summary_rules, file=fn_summary)
 
+
 # the good stuff! Capture the rules
+# something going wrong here!!!!
+# getRules <- function(rules, rulesAmount) { 
+#   numOfRows <- length(rules)
+#   if(rulesAmount > numOfRows) {
+#     r <- inspect(rules)
+#   } else {
+#     r <- inspect(rules[1:rulesAmount,])
+#   }
+#     return(r)
+# }
+
 tryCatch({
   topRules <- inspect(rules[1:rulesAmount])
 
@@ -81,12 +103,19 @@ error={
 }
 )
 
+# topRules <- getRules(rules, rulesAmount)
+# topRules <- inspect(rules)
+
 # This step is unnecessary, in the next step we convert to JSON and that's all we need.
 # write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
+print("topRules")
+print(topRules)
 
 # write json to file, use storeId as name
 rules_json <- toJSON(topRules, indent=1, method="C")
 fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
+print("rules_json")
+print(rules_json)
 
 write(rules_json, file=fn_rulesJson)
 

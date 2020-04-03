@@ -18,7 +18,7 @@ const setupODBC = () => {
     let options = {
       spawn: true,
       cwd: 'C:/',
-      shell: true // this or shit breaks!
+      shell: true, // this or shit breaks!
     };
 
     const child = spawn(bin, cliArgs, options);
@@ -48,9 +48,9 @@ const sendMbQuerySuperMan = async () => {
           database: 2,
           type: 'native',
           native: {
-            query: 'SELECT * FROM MenuItems WHERE MenuItemId = 1'
-          }
-        }
+            query: 'SELECT * FROM MenuItems WHERE MenuItemId = 1',
+          },
+        },
       })
       .set('X-Metabase-Session', 'c77a2b26-c68a-4fa6-b2d3-95d8681c26aa')
       .end((err, res) => {
@@ -78,7 +78,7 @@ const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
       storeId,
       confidence,
       rulesAmount,
-      byItemName
+      byItemName,
     ]);
     child.stderr.on('data', data => {
       console.log(data.toString());
@@ -119,7 +119,7 @@ const setupMetabase = async () => {
       'http://localhost:3000/api/session',
       {
         username: 'liam.gardner@protonmail.com',
-        password: 'metabase1'
+        password: 'metabase1',
       },
       { headers: { 'Content-Type': 'application/json' } }
     );
@@ -162,8 +162,8 @@ const sendMetabaseQuery = async (byItemName, storeId) => {
   const config = {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Metabase-Session': 'c77a2b26-c68a-4fa6-b2d3-95d8681c26aa'
-    }
+      'X-Metabase-Session': 'c77a2b26-c68a-4fa6-b2d3-95d8681c26aa',
+    },
   };
 
   try {

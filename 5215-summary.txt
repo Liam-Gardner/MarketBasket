@@ -1,0 +1,21 @@
+set of 844 rules
+
+rule length distribution (lhs + rhs):sizes
+  2   3   4   5   6 
+  5 373 352 102  12 
+
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  2.000   3.000   4.000   3.695   4.000   6.000 
+
+summary of quality measures:
+    support           confidence          lift             count       
+ Min.   :0.001025   Min.   :0.6000   Min.   :  2.880   Min.   : 28.00  
+ 1st Qu.:0.001099   1st Qu.:0.7442   1st Qu.:  4.777   1st Qu.: 30.00  
+ Median :0.001318   Median :0.8916   Median : 16.439   Median : 36.00  
+ Mean   :0.001584   Mean   :0.8594   Mean   : 21.459   Mean   : 43.27  
+ 3rd Qu.:0.001721   3rd Qu.:1.0000   3rd Qu.: 26.384   3rd Qu.: 47.00  
+ Max.   :0.018567   Max.   :1.0000   Max.   :142.224   Max.   :507.00  
+
+mining info:
+ data ntransactions support confidence
+   tr         27307   0.001        0.6
