@@ -1,0 +1,8 @@
+1. Test in R studio with the names again
+
+2. Why is the reduce function removing some rules? 
+    - check if the key is the same, in which case the reduce function would be overwriting it
+    - and do we really want 
+        "burger" => "chips"
+        "burger" => "fish"
+    If they both have the same confidence how do we pick which one is more worthy? Lift? Find a way

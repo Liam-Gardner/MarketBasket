@@ -25,33 +25,36 @@ usePackage <- function(p) {
 
 
 # load libraries
-usePackage('RODBC')
-usePackage('tidyverse')
+# load first so dplyr in tidyverse does not complain
+usePackage('plyr') 
+# # remove.packages('dplyr')
+usePackage('tidyverse') 
 usePackage('readxl')
 usePackage('knitr')
 usePackage('ggplot2')
 usePackage('lubridate')
 usePackage('arules')
 usePackage('arulesViz')
-usePackage('plyr')
 usePackage('rjson')
+
+
 
 
 # create filename
 data_csv <- capture.output(cat(storeId, "data.csv", sep="-"))
 retail <- read.csv(file = data_csv)
-print(head(retail))
+print(head(retail)) # type = list
 
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
-itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(byItemName == 'True') {df1$Name} else{df1$MenuItemId}, collapse = ","))
+itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(byItemName == 'True') {df1$Name} else{df1$MenuItemId}, collapse = ",")) # type = list
 
 # drop OrderId column
 itemList$OrderId <- NULL
 
 # rename remaining column to items
-colnames(itemList) <- c("items")
+colnames(itemList) <- c("items") # c combine
 
 # write to csv. This will create new column after each comma e.g.
 # Items
@@ -68,48 +71,57 @@ write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 #{Stuffed Auberginea} => {Stuffed Auberginea}
 # imagine suggesting more of the same!
 # file name should be storeId
-tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE)
+tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE, quote="\"'") 
+# type = S4
 # quote="\""
 
-# create rules with support and confidence values
+# create rules with support and confidence values #type = s4
 rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
-rules <- sort(rules, by='confidence', decreasing = TRUE)
+rules <- sort(rules, by='confidence', decreasing = TRUE) 
 
 # Statistial summary of the rules - store these
 fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
 summary_rules <- summary(rules)
 capture.output(summary_rules, file=fn_summary)
 
+# dplyr now
+# usePackage('dplyr')
 
 # the good stuff! Capture the rules
-# something going wrong here!!!!
-# getRules <- function(rules, rulesAmount) { 
-#   numOfRows <- length(rules)
-#   if(rulesAmount > numOfRows) {
-#     r <- inspect(rules)
-#   } else {
-#     r <- inspect(rules[1:rulesAmount,])
-#   }
-#     return(r)
-# }
-
-tryCatch({
-  topRules <- inspect(rules[1:rulesAmount])
-
-},
-error={
-  print('error trying to retrieve that amount of rules, here have them all...')
-  topRules <- inspect(rules)
+# type must be set to list before storing the rules in it using inspect
+getRules <- function(rules, rulesAmount) { 
+  r = list()
+  rulesAsList <- list(rules)
+  numOfRows <- length(rulesAsList[[1]])
+  print(typeof(r))
+    print(rulesAmount)
+    print(typeof(rulesAmount))
+  if(rulesAmount > numOfRows) {
+    r <- inspect(rules)
+    return(r)
+  } else {
+    ## not getting here or at least not printing
+    print(typeof(r))
+    print(rulesAmount)
+    print(typeof(rulesAmount))
+    r <- inspect(rules[1:rulesAmount,])
+    return(r)
+  }
 }
-)
 
-# topRules <- getRules(rules, rulesAmount)
-# topRules <- inspect(rules)
+# check this 
+# https://stackoverflow.com/questions/25730000/converting-object-of-class-rules-to-data-frame-in-r
+
+topRules <- getRules(rules, rulesAmount)
+print(typeof(topRules))
+print(topRules)
+
+# list[1:10] the 1 to 10 represents columns not the rows!
 
 # This step is unnecessary, in the next step we convert to JSON and that's all we need.
 # write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
-print("topRules")
-print(topRules)
+# print("topRules")
+# print(topRules)
 
 # write json to file, use storeId as name
 rules_json <- toJSON(topRules, indent=1, method="C")
@@ -120,4 +132,9 @@ print(rules_json)
 write(rules_json, file=fn_rulesJson)
 
 # delete mba file
-unlink(fn_mba)
+# unlink(fn_mba)
+
+# rulesAsList <- inspect(rules) # does this always convert to list
+# is.list(rulesAsAList) # returns boolean
+# length(rulesAsList) will always return the num of obj in the list
+# so use length(rulesAsList[[1]])

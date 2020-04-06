@@ -24,7 +24,7 @@ const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
       console.log(data.toString());
     });
     child.stdout.on('data', data => {
-      // console.log(data.toString());
+      console.log(data.toString());
     });
     child.on('error', error => {
       err = true;
@@ -45,6 +45,8 @@ const convertRulesToJson = storeId => {
   // may need to remove "" from key & value if returning menu item id's
   let lhs = parsedJson.lhs.map(str => str.replace(/[{}]/gm, ''));
   let rhs = parsedJson.rhs.map(str => str.replace(/[{}]/gm, ''));
+
+  console.log('json rules length: ', lhs.length);
 
   const keyValPairs = lhs.reduce((obj, value, index) => {
     obj[value] = rhs[index];
