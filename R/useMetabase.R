@@ -27,22 +27,19 @@ usePackage <- function(p) {
 # load libraries
 # load first so dplyr in tidyverse does not complain
 usePackage('plyr') 
-# # remove.packages('dplyr')
 usePackage('tidyverse') 
 usePackage('readxl')
 usePackage('knitr')
-usePackage('ggplot2')
+# usePackage('ggplot2')
 usePackage('lubridate')
 usePackage('arules')
 usePackage('arulesViz')
 usePackage('rjson')
 
-
-
-
-# create filename
-data_csv <- capture.output(cat(storeId, "data.csv", sep="-"))
-retail <- read.csv(file = data_csv)
+# create filename/dir
+fn_data_csv <- capture.output(cat(storeId, "data.csv", sep="-"))
+path_data_csv <- capture.output(cat(storeId, fn_data_csv, sep='/'))
+retail <- read.csv(file = path_data_csv)
 print(head(retail)) # type = list
 
 # This groups order items under one order_id and into one column seperated by a comma
@@ -62,8 +59,10 @@ colnames(itemList) <- c("items") # c combine
 # Kids Pizza    | Meal Deal 3 | Coke
 # use store id here to create unique filename
 fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
+path_mba <- capture.output(cat(storeId, fn_data_csv, sep='/'))
 
-write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
+
+write.csv(itemList, path_mba, quote=FALSE, row.names = TRUE)
 
 # convert the csv to correct basket transaction format
 # rm.duplicates=TRUE added beacuse it does it anyway, it cant handle quantities witin a transaction so wants to remove duplicates.
@@ -71,21 +70,22 @@ write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 #{Stuffed Auberginea} => {Stuffed Auberginea}
 # imagine suggesting more of the same!
 # file name should be storeId
-tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE, quote="\"'") 
+tr <- read.transactions(path_mba, format = 'basket', sep = ',', rm.duplicates=TRUE, quote="") 
+# quote = "" means quote off
+# quote="\"" means quote on
 # type = S4
-# quote="\""
 
 # create rules with support and confidence values #type = s4
 rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
-rules <- sort(rules, by='confidence', decreasing = TRUE) 
+sortBy <- c('confidence', 'lift')
+rules <- sort(rules, by=sortBy, decreasing = TRUE) 
 
 # Statistial summary of the rules - store these
 fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
-summary_rules <- summary(rules)
-capture.output(summary_rules, file=fn_summary)
+path_summary <- capture.output(cat(storeId, fn_summary, sep='/'))
 
-# dplyr now
-# usePackage('dplyr')
+summary_rules <- summary(rules)
+capture.output(summary_rules, file=path_summary)
 
 # the good stuff! Capture the rules
 # type must be set to list before storing the rules in it using inspect
@@ -100,7 +100,6 @@ getRules <- function(rules, rulesAmount) {
     r <- inspect(rules)
     return(r)
   } else {
-    ## not getting here or at least not printing
     print(typeof(r))
     print(rulesAmount)
     print(typeof(rulesAmount))
@@ -112,29 +111,19 @@ getRules <- function(rules, rulesAmount) {
 # check this 
 # https://stackoverflow.com/questions/25730000/converting-object-of-class-rules-to-data-frame-in-r
 
-topRules <- getRules(rules, rulesAmount)
-print(typeof(topRules))
-print(topRules)
+if(byItemName) {
+  rulesAsDataFrame = data.frame(lhs = labels(lhs(rules)), rhs = labels(rhs(rules)),rules@quality)
+  topRules <- rulesAsDataFrame[1:rulesAmount,]
+} else {topRules <- getRules(rules, rulesAmount)}
+
 
 # list[1:10] the 1 to 10 represents columns not the rows!
-
-# This step is unnecessary, in the next step we convert to JSON and that's all we need.
-# write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
-# print("topRules")
-# print(topRules)
 
 # write json to file, use storeId as name
 rules_json <- toJSON(topRules, indent=1, method="C")
 fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
-print("rules_json")
-print(rules_json)
-
-write(rules_json, file=fn_rulesJson)
+path_rulesJson <- capture.output(cat(storeId, fn_rulesJson, sep='/'))
+write(rules_json, file=path_rulesJson)
 
 # delete mba file
-# unlink(fn_mba)
-
-# rulesAsList <- inspect(rules) # does this always convert to list
-# is.list(rulesAsAList) # returns boolean
-# length(rulesAsList) will always return the num of obj in the list
-# so use length(rulesAsList[[1]])
+unlink(fn_mba)

@@ -10,6 +10,7 @@ require('dotenv').config();
 const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
 const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
   return new Promise((resolve, reject) => {
+    console.log('callR....');
     let err = false;
     const child = spawn(process.env.RSCRIPT, [
       '--vanilla',
@@ -38,7 +39,7 @@ const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
 };
 
 const convertRulesToJson = storeId => {
-  let data = fs.readFileSync(`${storeId}-rules.json`, 'utf8');
+  let data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
   let parsedJson = JSON.parse(data);
 
   // removes {} from lhs and rhs
@@ -47,8 +48,20 @@ const convertRulesToJson = storeId => {
   let rhs = parsedJson.rhs.map(str => str.replace(/[{}]/gm, ''));
 
   console.log('json rules length: ', lhs.length);
+  // need to
 
   const keyValPairs = lhs.reduce((obj, value, index) => {
+    // check if obj[value] exists in obj
+    // if true then compare the lift of each and keep the highest
+    // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
+
+    //TODO: Test this
+    let duplicate = Object.keys(obj).find(k => k === obj[value]);
+    if (duplicate) {
+      console.log('duplicate', duplicate);
+      return;
+    }
+
     obj[value] = rhs[index];
     return obj;
   }, {});
@@ -74,7 +87,6 @@ const setupMetabase = async () => {
 
 const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
   let sqlQuery;
-  console.log('byItemName', byItemName);
   if (byItemName == 'True') {
     sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
   } else {
@@ -116,19 +128,28 @@ router.post('/getRules', (req, res) => {
 
   sendMetabaseQuery(mbToken, byItemName, storeId)
     .then(result => {
-      fs.writeFile(`${storeId}-data.csv`, result.data, err => {
-        if (err) return console.log(err);
-      });
-      callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
-        .then(result => {
-          console.log('finished with callR: ');
-          const rules = convertRulesToJson(storeId);
-          res.status(200).send(rules);
-        })
-        .catch(error => {
-          console.log('Finished with callR - error: ', error);
-          res.status(500).send(error);
+      fs.mkdir(storeId, { recursive: true }, error => {
+        if (error) {
+          console.log('mkdir error', error);
+          res.sendStatus(500);
+        }
+        fs.writeFile(`${storeId}/${storeId}-data.csv`, result.data, err => {
+          if (err) {
+            return console.log(err);
+          } else {
+            callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
+              .then(result => {
+                console.log('finished with callR: ');
+                const rules = convertRulesToJson(storeId);
+                res.status(200).send(rules);
+              })
+              .catch(error => {
+                console.log('Finished with callR - error: ', error);
+                res.status(500).send(error);
+              });
+          }
         });
+      });
     })
     .catch(error => {
       console.log('Finished with MB Query - error: ', error);
