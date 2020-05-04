@@ -68,13 +68,13 @@ const convertRulesToJson = storeId => {
   return keyValPairs;
 };
 
-const setupMetabase = async () => {
+const setupMetabase = async (username, password) => {
   try {
     const mbToken = await axios.post(
       `${process.env.METABASE_URL}/api/session`,
       {
-        username: process.env.METABASE_USER,
-        password: process.env.METABASE_PASS,
+        username: username,
+        password: password,
       },
       { headers: { 'Content-Type': 'application/json' } }
     );
@@ -109,8 +109,9 @@ const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
 };
 
 router.post('/login', (req, res) => {
-  const { storeId, confidence, rulesAmount, byItemName } = req.body;
-  setupMetabase().then(result => {
+  const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
+  setupMetabase(username, password).then(result => {
+    // if succesful login to metabase
     const mbToken = encodeURIComponent(result.data.id);
     res.redirect(
       307,
