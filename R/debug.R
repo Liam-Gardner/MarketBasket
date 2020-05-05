@@ -1,21 +1,9 @@
-# rem: with TRUE option below, #args[1] is the "--args" switch; skip it.
 args <- commandArgs(TRUE)
 storeId <- (args[2])
 confidence <- as.numeric((args[3]))
 rulesAmount <- as.numeric((args[4]))
-# if we get the rules by Item name we need to worry about the strings that contain commas or qoutes
-# eg an item could be 15" pizza
-# or Chips, Medium
-# we are splitting based on delimters such as commas when we read in transactions
-# we should strip out commas and maybe the quotes too
-# With quotes we could set quote delimeter = "\"", which means any string in column that has quotes around it is still one string, do not seperate
-# eg this string -> "Coke, chips, burger" is not seperated at the commas
-# we will use quote="" to ignore all qoutes, actually this screws up the json
 byItemName <- (args[5])
 
-print(args)
-
-# checks if package is installed and then installs
 usePackage <- function(p) {
   if (!is.element(p, installed.packages()[,1])) {
     install.packages(p, dep = TRUE, repos = "http://cran.us.r-project.org")
@@ -23,14 +11,11 @@ usePackage <- function(p) {
   require(p, character.only = TRUE)
 }
 
-
 # load libraries
-# load first so dplyr in tidyverse does not complain
 usePackage('plyr') 
 usePackage('tidyverse') 
 usePackage('readxl')
 usePackage('knitr')
-# usePackage('ggplot2')
 usePackage('lubridate')
 usePackage('arules')
 usePackage('arulesViz')
@@ -117,7 +102,7 @@ if(byItemName) {
 } else {topRules <- getRules(rules, rulesAmount)}
 
 
-# list[1:10] the 1 to 10 represents columns not the rows!
+
 
 # write json to file, use storeId as name
 rules_json <- toJSON(topRules, indent=1, method="C")
@@ -125,5 +110,10 @@ fn_rulesJson <- capture.output(cat(storeId, "rules.json", sep="-"))
 path_rulesJson <- capture.output(cat(storeId, fn_rulesJson, sep='/'))
 write(rules_json, file=path_rulesJson)
 
-# delete mba file
-# unlink(fn_mba)
+#create html widget
+# p <- inspectDT(rules)
+# fn_widget <- capture.output(cat(storeId, "widget.html", sep="-"))
+# path_widget <- capture.output(cat(storeId, fn_widget, sep='/'))
+# absolute_path_widget <- capture.output(cat(getwd(), path_widget, sep="/"))
+# htmlwidgets::saveWidget(p, absolute_path_widget, selfcontained = FALSE)
+# browseURL(absolute_path_widget)
