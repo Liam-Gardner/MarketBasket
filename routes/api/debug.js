@@ -82,14 +82,11 @@ const convertRulesToJson = storeId => {
     // if true then compare the lift of each and keep the highest
     // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
 
-    //TODO: Test this
-    let duplicate = Object.keys(obj).find(k => k === obj[value]);
-    if (duplicate) {
-      console.log('duplicate', duplicate);
-      return;
+    let duplicate = Object.keys(obj).find(k => k === value);
+    if (!duplicate) {
+      obj[value] = rhs[index];
     }
 
-    obj[value] = rhs[index];
     return obj;
   }, {});
   return keyValPairs;

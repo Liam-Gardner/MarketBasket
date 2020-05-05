@@ -55,14 +55,11 @@ const convertRulesToJson = storeId => {
     // if true then compare the lift of each and keep the highest
     // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
 
-    //TODO: Test this
-    let duplicate = Object.keys(obj).find(k => k === obj[value]);
-    if (duplicate) {
-      console.log('duplicate', duplicate);
-      return;
+    let duplicate = Object.keys(obj).find(k => k === value);
+    if (!duplicate) {
+      obj[value] = rhs[index];
     }
 
-    obj[value] = rhs[index];
     return obj;
   }, {});
   return keyValPairs;
@@ -110,14 +107,16 @@ const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
 
 router.post('/login', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
-  setupMetabase(username, password).then(result => {
-    // if succesful login to metabase
-    const mbToken = encodeURIComponent(result.data.id);
-    res.redirect(
-      307,
-      `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
-    );
-  });
+  setupMetabase(username, password)
+    .then(result => {
+      // if succesful login to metabase
+      const mbToken = encodeURIComponent(result.data.id);
+      res.redirect(
+        307,
+        `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
+      );
+    })
+    .catch(err => res.status(500).send(err));
 });
 
 router.post('/getRules', (req, res) => {

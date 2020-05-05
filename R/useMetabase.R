@@ -59,7 +59,7 @@ colnames(itemList) <- c("items") # c combine
 # Kids Pizza    | Meal Deal 3 | Coke
 # use store id here to create unique filename
 fn_mba <- capture.output(cat(storeId, "mba.csv", sep="-"))
-path_mba <- capture.output(cat(storeId, fn_data_csv, sep='/'))
+path_mba <- capture.output(cat(storeId, fn_mba, sep='/'))
 
 
 write.csv(itemList, path_mba, quote=FALSE, row.names = TRUE)
@@ -126,4 +126,4 @@ path_rulesJson <- capture.output(cat(storeId, fn_rulesJson, sep='/'))
 write(rules_json, file=path_rulesJson)
 
 # delete mba file
-unlink(fn_mba)
+# unlink(fn_mba)
