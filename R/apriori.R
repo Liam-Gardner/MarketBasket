@@ -8,7 +8,7 @@ print(args)
 
 # checks if package is installed and then installs
 usePackage <- function(p) {
-  if (!is.element(p, installed.packages()[,1])) {
+  if (!is.element(p, installed.packages()[, 1])) {
     install.packages(p, dep = TRUE, repos = "http://cran.us.r-project.org")
   }
   require(p, character.only = TRUE)
@@ -50,6 +50,7 @@ itemList <- ddply(retail, c("OrderId"), function(df1)paste(if(byItemName == 'Tru
 # drop OrderId column
 itemList$OrderId <- NULL
 
+
 # rename remaining column to items
 colnames(itemList) <- c("items")
 
@@ -67,12 +68,11 @@ write.csv(itemList, fn_mba, quote=FALSE, row.names = TRUE)
 # e.g If the item list is Stuffed Auberginea, Stuffed Auberginea, Stuffed Auberginea, Stuffed Auberginea it would be a waste if time returning a rule saying
 #{Stuffed Auberginea} => {Stuffed Auberginea}
 # imagine suggesting more of the same!
-# file name should be storeId
-tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates=TRUE)
+tr <- read.transactions(fn_mba, format = 'basket', sep = ',', rm.duplicates = TRUE)
 
 # create rules with support and confidence values
-rules <- apriori(tr, parameter = list(supp=0.001, conf=confidence))
-rules <- sort(rules, by='confidence', decreasing = TRUE)
+rules <- apriori(tr, parameter = list(supp = 0.001, conf = confidence))
+rules <- sort(rules, by = 'confidence', decreasing = TRUE)
 
 # Statistial summary of the rules - store these
 fn_summary <- capture.output(cat(storeId, "summary.txt", sep="-"))
@@ -88,10 +88,6 @@ error={
   print('error trying to retrieve that amount of rules, here have them all...')
   topRules <- inspect(rules)
 }
-)
-
-# This step is unnecessary, in the next step we convert to JSON and that's all we need.
-# write.csv(rulesTop10, 'store_rules.csv', quote=FALSE, row.names = FALSE)
 
 # write json to file, use storeId as name
 rules_json <- toJSON(topRules, indent=1, method="C")

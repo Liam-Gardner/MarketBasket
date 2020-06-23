@@ -79,6 +79,7 @@ ORDER BY OrderId
 GO
 ```
 
+
 # R Code
 Line by line explanation
 ```
@@ -144,3 +145,48 @@ The API returns the rules using itemId's. Set this to true if you prefer to have
     "267,395,72": "215"
 }
 ```
+
+# Front End Example
+```
+const getRecommendedItem = (rules, selectedItem) => {
+	let recommendedItem = rules[selectedItem]
+	if(recommendedItem){
+		return recommendedItem
+		}
+	else{return null}
+} 
+```
+
+# Get Columns Names
+## Use this to make the service more generic
+```
+CREATE PROC usp_getTableColumnNames @TABLE_NAME varchar(max), @SCHEMA varchar(max)
+AS
+BEGIN
+	SELECT COLUMN_NAME,* 
+	FROM INFORMATION_SCHEMA.COLUMNS
+	WHERE TABLE_NAME = @TABLE_NAME AND TABLE_SCHEMA=@SCHEMA
+END
+
+
+EXEC usp_getTableColumnNames @TABLE_NAME = 'Orders', @SCHEMA = 'dbo'
+```
+
+## Known Issues
+# Missing Rules
+If you receive less rules than expected it is likely that there are 2 keys that are the same when the lhs and the rhs arrays have passed through the reduce function. The first key and value will be stored in the object but its value will be overwritten if a key with the same name is added later in the function.
+The rule with the greater lift will win out. 
+# Rules by item name
+IF an menuitem name is seperated by commas like this : 'Sweet and Sour Chicken, Prawn or Tofu and Veg', a rule will be found that says 
+	{"Sweet and Sour Chicken" => "Prawn or Tofu and Veg"}
+
+The pre processing trys to break up multilple order items in an order by comma. If the order is:
+Sweet and Sour Chicken, Prawn or Tofu and Veg
+Chips
+Coke
+
+It will be stored as  | Sweet and Sour Chicken | Prawn or Tofu and Veg | Chips | Coke
+
+This is wrong. Sweet and Sour Chicken, Prawn or Tofu and Veg should be treated as one item.
+
+This won't happen when requesting menu item id's from the API 
