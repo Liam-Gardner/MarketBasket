@@ -14,8 +14,8 @@ const setupODBC = () => {
     let cliArgs = [];
     let options = {
       spawn: true,
-      cwd: "C:/",
-      shell: true // this or shit breaks!
+      cwd: 'C:/',
+      shell: true, // this or shit breaks!
     };
 
     const child = spawn(bin, cliArgs, options);
@@ -36,6 +36,7 @@ const setupODBC = () => {
   });
 };
 
+
 const rscriptPath = path.resolve("./", "R", "apriori.R");
 const callR = (
   path,
@@ -55,9 +56,7 @@ const callR = (
       storeId,
       confidence,
       rulesAmount,
-      rulesById,
-      isDemo,
-      isDemoById
+      byItemName,
     ]);
     child.stderr.on("data", data => {
       console.log(data.toString());
@@ -96,6 +95,7 @@ const convertRulesToJson = (storeId, isDemo, rulesById, isDemoById) => {
   }, {});
   return keyValPairs;
 };
+
 
 router.post("/test", (req, res) => {
   const {
@@ -136,5 +136,59 @@ router.post("/test", (req, res) => {
       res.status(500).send(error);
     });
 });
+
+// router.post('/trySuperMan', (req, res) => {
+//   sendMbQuerySuperMan()
+//     .then(result => res.send(result.data).status(200))
+//     .catch(err => res.send(err).status(500));
+// });
+
+// // if (useMetabase) {
+// //   // create metabase connection
+// //   setupMetabase()
+// //     .then(result => {
+// //       // run sql query to return .csv format and pass the filename to R
+// //       console.log('metabase setup complete ', result.data);
+// //       next();
+// //       sendMetabaseQuery()
+// //         .then(r => {
+// //           // fs.writeFile('metabaseTest.csv', r.data);
+// //           res.status(r.data);
+// //         })
+// //         .catch(error => {
+// //           console.log(error);
+// //           res.status(500).send(error);
+// //         });
+
+// //       // console.log('Invoking R script at: ', rscriptPath);
+// //     })
+// //     .catch(error => {
+// //       console.log('Finished with ODBC - error: ', error);
+// //       res.status(500).send(error);
+// //     });
+// } else {
+//   // create the db connection
+//   setupODBC()
+//     .then(result => {
+//       console.log('odbc setup complete ', result);
+//       console.log('Invoking R script at: ', rscriptPath);
+//       // execute R code
+//       callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
+//         .then(result => {
+//           console.log('finished with callR: ', result);
+//           const rules = convertRulesToJson(storeId);
+//           res.status(200).send(rules);
+//         })
+//         .catch(error => {
+//           console.log('Finished with callR - error: ', error);
+//           res.status(500).send(error);
+//         });
+//     })
+//     .catch(error => {
+//       console.log('Finished with ODBC - error: ', error);
+//       res.status(500).send(error);
+//     });
+//}
+// });
 
 module.exports = router;
