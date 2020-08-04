@@ -65,7 +65,7 @@ const convertRulesToJson = storeId => {
   return keyValPairs;
 };
 
-const setupMetabase = async (username, password) => {
+const metabaseLogin = async (username, password) => {
   try {
     const mbToken = await axios.post(
       `${process.env.METABASE_URL}/api/session`,
@@ -82,15 +82,18 @@ const setupMetabase = async (username, password) => {
   }
 };
 
-const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
+const constructRulesQuery = (byItemName, storeId) => {
   let sqlQuery;
   if (byItemName == 'True') {
     sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
   } else {
     sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
   }
+  return sqlQuery;
+};
 
-  const url = `${process.env.METABASE_URL}/api/dataset/csv`;
+const sendMetabaseQuery = async (mbToken, sqlQuery, format) => {
+  const url = `${process.env.METABASE_URL}/api/dataset/${format}`;
   const config = {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -107,7 +110,7 @@ const sendMetabaseQuery = async (mbToken, byItemName, storeId) => {
 
 router.post('/login', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
-  setupMetabase(username, password)
+  metabaseLogin(username, password)
     .then(result => {
       // if succesful login to metabase
       const mbToken = encodeURIComponent(result.data.id);
@@ -126,7 +129,9 @@ router.post('/getRules', (req, res) => {
   const rulesAmount = req.query.rulesAmount;
   const byItemName = req.query.byItemName;
 
-  sendMetabaseQuery(mbToken, byItemName, storeId)
+  const sqlQuery = constructRulesQuery(byItemName, storeId);
+
+  sendMetabaseQuery(mbToken, sqlQuery, 'csv')
     .then(result => {
       fs.mkdir(storeId, { recursive: true }, error => {
         if (error) {
@@ -156,5 +161,59 @@ router.post('/getRules', (req, res) => {
       res.status(500).send(error);
     });
 });
+
+//#region Get Menu items for mock store
+
+/*
+  1. User loads store.html
+  2. This is a demo so we will set the storeId to 5215
+      - we could pre-set the menuId now as well but eh, where's the fun in that? 
+  2. api call to metabase to login
+  3. .then we receive the mb token
+  4. we use this to call sendMetabaseQuery to get the menuId
+  5. .then we use the mb token to sendMetabaseQuery to 
+*/
+router.post('/login-demo', (req, res) => {
+  const { storeId, username, password } = req.body;
+  metabaseLogin(username, password)
+    .then(result => {
+      // if succesful login to metabase
+      const mbToken = encodeURIComponent(result.data.id);
+      console.log(mbToken);
+      res.redirect(307, `/useMetabase/getMenuItems?mbToken=${mbToken}&storeId=${storeId}`);
+    })
+    .catch(err => res.status(500).send(err));
+});
+
+router.post('/getMenuItems', (req, res) => {
+  console.log('getMenuItems route');
+  const mbToken = req.query.mbToken;
+  const storeId = req.query.storeId;
+  const sqlQuery = constructMenuQuery(storeId);
+  sendMetabaseQuery(mbToken, sqlQuery, 'json').then(result => {
+    const menu = parseMenu(result.data);
+    res.status(200).send(menu);
+  });
+});
+
+const constructMenuQuery = storeId => {
+  return `{"database": 2, "type": "native", "native": {"query": "SELECT mi.Name 
+  FROM Menusections ms 
+  JOIN Menuitems mi 
+  ON ms.Menusectionid = mi.Menusectionid 
+  WHERE ms.MenuId =
+  (SELECT MenuId 
+  FROM PhysicalRestaurants 
+  WHERE PhysicalRestaurantId = ${storeId})"}}`;
+};
+
+const parseMenu = jsonMenu => {
+  const menuStrings = jsonMenu.map(r => Object.values(r)).toString();
+  const menuArray = menuStrings.split(',');
+  const uniqueItems = [...new Set(menuArray)];
+  return uniqueItems;
+};
+
+//#endregion
 
 module.exports = router;
