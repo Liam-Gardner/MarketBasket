@@ -5,6 +5,7 @@ const spawn = require('child_process').spawn;
 const fs = require('fs');
 const axios = require('axios').default;
 const qs = require('querystring');
+const { env } = require('process');
 require('dotenv').config();
 
 const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
@@ -121,6 +122,42 @@ router.post('/login', (req, res) => {
     })
     .catch(err => res.status(500).send(err));
 });
+
+//#region dbs logins
+router.post('/login-dbs', (req, res) => {
+  const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
+  if (username === env.DBS_USER && password === env.DBS_PASS) {
+    metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
+      .then(result => {
+        // if succesful login to metabase
+        const mbToken = encodeURIComponent(result.data.id);
+        res.redirect(
+          307,
+          `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
+        );
+      })
+      .catch(err => res.status(500).send(err));
+  } else {
+    res.status(401).send('Wrong password or username'); // handle this in FE
+  }
+});
+
+router.post('/login-dbs-demo', (req, res) => {
+  const { storeId, username, password } = req.body;
+  if (username === env.DBS_USER && password === env.DBS_PASS) {
+    metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
+      .then(result => {
+        // if succesful login to metabase
+        const mbToken = encodeURIComponent(result.data.id);
+        console.log(mbToken);
+        res.redirect(307, `/useMetabase/getMenuItems?mbToken=${mbToken}&storeId=${storeId}`);
+      })
+      .catch(err => res.status(500).send(err));
+  } else {
+    res.status(401).send('Wrong password or username'); // handle this in FE
+  }
+});
+//#endregion
 
 router.post('/getRules', (req, res) => {
   const mbToken = req.query.mbToken;
