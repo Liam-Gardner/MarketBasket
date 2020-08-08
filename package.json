@@ -1,5 +1,5 @@
 {
-  "name": "MarketBasket",
+  "name": "marketbasket",
   "version": "1.0.0",
   "description": "Associaion analysis to provide rules using apriori algorithm",
   "main": "app.js",
