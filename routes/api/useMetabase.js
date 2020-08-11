@@ -1,114 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const spawn = require('child_process').spawn;
 const fs = require('fs');
-const axios = require('axios').default;
-const qs = require('querystring');
 const { env } = require('process');
 require('dotenv').config();
+const {
+  constructMenuQuery,
+  constructRulesQuery,
+  metabaseLogin,
+  sendMetabaseQuery,
+} = require('../../models/metabase');
+const { callR, convertRulesToJson, parseMenu } = require('../../helpers');
 
 const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
-const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
-  return new Promise((resolve, reject) => {
-    console.log('callR....');
-    let err = false;
-    const child = spawn(process.env.RSCRIPT, [
-      '--vanilla',
-      path,
-      '--args',
-      storeId,
-      confidence,
-      rulesAmount,
-      byItemName,
-    ]);
-    child.stderr.on('data', data => {
-      console.log(data.toString());
-    });
-    child.stdout.on('data', data => {
-      console.log(data.toString());
-    });
-    child.on('error', error => {
-      err = true;
-      reject(error);
-    });
-    child.on('exit', () => {
-      if (err) return; // debounce - already rejected
-      resolve('done.'); // TODO: check exit code and resolve/reject accordingly
-    });
-  });
-};
 
-const convertRulesToJson = storeId => {
-  let data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
-  let parsedJson = JSON.parse(data);
-
-  // removes {} from lhs and rhs
-  // may need to remove "" from key & value if returning menu item id's
-  let lhs = parsedJson.lhs.map(str => str.replace(/[{}]/gm, ''));
-  let rhs = parsedJson.rhs.map(str => str.replace(/[{}]/gm, ''));
-
-  console.log('json rules length: ', lhs.length);
-  // need to
-
-  const keyValPairs = lhs.reduce((obj, value, index) => {
-    // check if obj[value] exists in obj
-    // if true then compare the lift of each and keep the highest
-    // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
-
-    let duplicate = Object.keys(obj).find(k => k === value);
-    if (!duplicate) {
-      obj[value] = rhs[index];
-    }
-
-    return obj;
-  }, {});
-  return keyValPairs;
-};
-
-const metabaseLogin = async (username, password) => {
-  try {
-    const mbToken = await axios.post(
-      `${process.env.METABASE_URL}/api/session`,
-      {
-        username: username,
-        password: password,
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
-
-    return mbToken;
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-const constructRulesQuery = (byItemName, storeId) => {
-  let sqlQuery;
-  if (byItemName == 'True') {
-    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
-  } else {
-    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
-  }
-  return sqlQuery;
-};
-
-const sendMetabaseQuery = async (mbToken, sqlQuery, format) => {
-  const url = `${process.env.METABASE_URL}/api/dataset/${format}`;
-  const config = {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Metabase-Session': mbToken,
-    },
-  };
-
-  try {
-    return axios.post(url, qs.stringify({ query: sqlQuery }), config);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
+//#region original login
 router.post('/login', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
   metabaseLogin(username, password)
@@ -122,6 +28,7 @@ router.post('/login', (req, res) => {
     })
     .catch(err => res.status(500).send(err));
 });
+//#endregion
 
 //#region dbs logins
 router.post('/login-dbs', (req, res) => {
@@ -159,6 +66,8 @@ router.post('/login-dbs-demo', (req, res) => {
 });
 //#endregion
 
+//#region main redirected routes
+//#region GET RULES
 router.post('/getRules', (req, res) => {
   const mbToken = req.query.mbToken;
   const storeId = req.query.storeId;
@@ -198,18 +107,9 @@ router.post('/getRules', (req, res) => {
       res.status(500).send(error);
     });
 });
+//#endregion
 
-//#region Get Menu items for mock store
-
-/*
-  1. User loads store.html
-  2. This is a demo so we will set the storeId to 5215
-      - we could pre-set the menuId now as well but eh, where's the fun in that? 
-  2. api call to metabase to login
-  3. .then we receive the mb token
-  4. we use this to call sendMetabaseQuery to get the menuId
-  5. .then we use the mb token to sendMetabaseQuery to 
-*/
+//#region GET Menu items for mock store
 router.post('/login-demo', (req, res) => {
   const { storeId, username, password } = req.body;
   metabaseLogin(username, password)
@@ -233,24 +133,6 @@ router.post('/getMenuItems', (req, res) => {
   });
 });
 
-const constructMenuQuery = storeId => {
-  return `{"database": 2, "type": "native", "native": {"query": "SELECT mi.Name 
-  FROM Menusections ms 
-  JOIN Menuitems mi 
-  ON ms.Menusectionid = mi.Menusectionid 
-  WHERE ms.MenuId =
-  (SELECT MenuId 
-  FROM PhysicalRestaurants 
-  WHERE PhysicalRestaurantId = ${storeId})"}}`;
-};
-
-const parseMenu = jsonMenu => {
-  const menuStrings = jsonMenu.map(r => Object.values(r)).toString();
-  const menuArray = menuStrings.split(',');
-  const uniqueItems = [...new Set(menuArray)];
-  return uniqueItems;
-};
-
 //#endregion
-
+//#endregion
 module.exports = router;
