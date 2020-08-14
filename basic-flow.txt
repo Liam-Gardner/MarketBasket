@@ -1,0 +1,21 @@
+1. User enters metabase login details
+
+2. User enters storeId, confidence, rulesAmount, byItemName parameters
+
+3. Upon succesful login user is redirected to getRules route
+
+4. We send a SQL query to metabase to join the right tables so that we get a 2 column dataset back with an OrderId  column and an OrderItem column.
+
+5. Metabse returns a .csv file with the dataset and we create a folder on the server using the storeId as its name as well as storing the dataset inside also using the storeId. {storeId}-data.csv
+
+6. Next we pass the storeId, confidence, rulesAmount, byItemName parameters to a function that will invoke an instance of R.
+
+7. The R script will firsty install the necessary pacakges for assoication rules and visualisation. ('arules', 'arulesViz', 'tidyverse', etc.)
+
+8. We then group each order item under their relevant order id so that it can be stored as a transaction object. 
+
+9. Now that it is in the correct format we can mine the data for association rules using the Apriori alogrithm.
+
+10. Once the alogrithm is complete we return the data as a JSON object to our Node server.
+
+11. We can now return the rules in JSON format to the client.
