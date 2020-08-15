@@ -1,16 +1,17 @@
-const express = require('express');
+import * as express from 'express';
 const router = express.Router();
 const path = require('path');
-const fs = require('fs');
 const { env } = require('process');
+
+import * as fs from 'fs';
 require('dotenv').config();
-const {
+import {
   constructMenuQuery,
   constructRulesQuery,
   metabaseLogin,
   sendMetabaseQuery,
-} = require('../../models/metabase');
-const { callR, convertRulesToJson, parseMenu } = require('../../helpers');
+} from '../../models/metabase';
+import { callR, convertRulesToJson, parseMenu } from '../../helpers';
 
 const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
 
@@ -70,16 +71,16 @@ router.post('/login-dbs-demo', (req, res) => {
 //#region GET RULES
 router.post('/getRules', (req, res) => {
   const mbToken = req.query.mbToken;
-  const storeId = req.query.storeId;
+  const storeId = req.query.storeId as string;
   const confidence = req.query.confidence;
   const rulesAmount = req.query.rulesAmount;
   const byItemName = req.query.byItemName;
 
-  const sqlQuery = constructRulesQuery(byItemName, storeId);
+  const sqlQuery = constructRulesQuery(byItemName as string, storeId);
 
   sendMetabaseQuery(mbToken, sqlQuery, 'csv')
     .then(result => {
-      fs.mkdir(storeId, { recursive: true }, error => {
+      fs.mkdir(storeId as string, { recursive: true }, error => {
         if (error) {
           console.log('mkdir error', error);
           res.sendStatus(500);
@@ -126,7 +127,7 @@ router.post('/getMenuItems', (req, res) => {
   console.log('getMenuItems route');
   const mbToken = req.query.mbToken;
   const storeId = req.query.storeId;
-  const sqlQuery = constructMenuQuery(storeId);
+  const sqlQuery = constructMenuQuery(storeId as string);
   sendMetabaseQuery(mbToken, sqlQuery, 'json').then(result => {
     const menu = parseMenu(result.data);
     res.status(200).send(menu);

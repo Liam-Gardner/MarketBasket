@@ -1,4 +1,4 @@
-const express = require('express');
+import express, { Request, Response, NextFunction } from 'express';
 const bodyParser = require('body-parser');
 const app = express();
 const morgan = require('morgan');
@@ -35,11 +35,11 @@ app.use('/debug', api_debug);
 //err handling
 app.use((req, res, next) => {
   const error = new Error('Not Found!');
-  error.status = 404;
+  res.status(404);
   next(error);
 });
 
-app.use((error, req, res, next) => {
+app.use((error: any, req: any, res: Response<any>, next: NextFunction) => {
   res.status(error.status || 500);
   res.json({
     error: {
