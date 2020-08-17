@@ -70,10 +70,6 @@ exports.convertRulesToJson = function (storeId) {
     return keyValPairs;
 };
 exports.callR = function (path, storeId, confidence, rulesAmount, byItemName) {
-    console.log('storeId', typeof storeId);
-    console.log('confidence', typeof confidence);
-    console.log('rulesAmount', typeof rulesAmount);
-    console.log('byItemName', typeof byItemName);
     return new Promise(function (resolve, reject) {
         console.log('callR....');
         var err = false;

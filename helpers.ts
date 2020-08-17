@@ -39,15 +39,10 @@ export const convertRulesToJson = (storeId: string) => {
 export const callR = (
   path: string,
   storeId: string,
-  confidence: any,
-  rulesAmount: any,
-  byItemName: any
+  confidence: string,
+  rulesAmount: string,
+  byItemName: string
 ) => {
-  console.log('storeId', typeof storeId);
-  console.log('confidence', typeof confidence);
-  console.log('rulesAmount', typeof rulesAmount);
-  console.log('byItemName', typeof byItemName);
-
   return new Promise((resolve, reject) => {
     console.log('callR....');
     let err = false;

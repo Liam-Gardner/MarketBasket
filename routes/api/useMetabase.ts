@@ -70,17 +70,17 @@ router.post('/login-dbs-demo', (req, res) => {
 //#region main redirected routes
 //#region GET RULES
 router.post('/getRules', (req, res) => {
-  const mbToken = req.query.mbToken;
+  const mbToken = req.query.mbToken as string;
   const storeId = req.query.storeId as string;
-  const confidence = req.query.confidence;
-  const rulesAmount = req.query.rulesAmount;
-  const byItemName = req.query.byItemName;
+  const confidence = req.query.confidence as string;
+  const rulesAmount = req.query.rulesAmount as string;
+  const byItemName = req.query.byItemName as 'True' | 'False';
 
-  const sqlQuery = constructRulesQuery(byItemName as string, storeId);
+  const sqlQuery = constructRulesQuery(byItemName, storeId);
 
   sendMetabaseQuery(mbToken, sqlQuery, 'csv')
     .then(result => {
-      fs.mkdir(storeId as string, { recursive: true }, error => {
+      fs.mkdir(storeId, { recursive: true }, error => {
         if (error) {
           console.log('mkdir error', error);
           res.sendStatus(500);
@@ -125,9 +125,9 @@ router.post('/login-demo', (req, res) => {
 
 router.post('/getMenuItems', (req, res) => {
   console.log('getMenuItems route');
-  const mbToken = req.query.mbToken;
-  const storeId = req.query.storeId;
-  const sqlQuery = constructMenuQuery(storeId as string);
+  const mbToken = req.query.mbToken as string;
+  const storeId = req.query.storeId as string;
+  const sqlQuery = constructMenuQuery(storeId);
   sendMetabaseQuery(mbToken, sqlQuery, 'json').then(result => {
     const menu = parseMenu(result.data);
     res.status(200).send(menu);
