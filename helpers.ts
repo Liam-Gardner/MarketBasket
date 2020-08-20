@@ -1,26 +1,29 @@
-const fs = require('fs');
+import * as fs from 'fs';
+
 const spawn = require('child_process').spawn;
 
-const parseMenu = jsonMenu => {
-  const menuStrings = jsonMenu.map(r => Object.values(r)).toString();
+export const parseMenu = (jsonMenu: { Name: string }[]) => {
+  const menuStrings: string = jsonMenu.map(r => Object.values(r)).toString();
   const menuArray = menuStrings.split(',');
   const uniqueItems = [...new Set(menuArray)];
   return uniqueItems;
 };
 
-const convertRulesToJson = storeId => {
+export const convertRulesToJson = (storeId: string) => {
   let data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
   let parsedJson = JSON.parse(data);
 
   // removes {} from lhs and rhs
   // may need to remove "" from key & value if returning menu item id's
-  let lhs = parsedJson.lhs.map(str => str.replace(/[{}]/gm, ''));
-  let rhs = parsedJson.rhs.map(str => str.replace(/[{}]/gm, ''));
+  let lhs = parsedJson.lhs.map((str: string) => str.replace(/[{}]/gm, ''));
+  let rhs = parsedJson.rhs.map((str: string) => str.replace(/[{}]/gm, ''));
 
   console.log('json rules length: ', lhs.length);
   // need to
 
-  const keyValPairs = lhs.reduce((obj, value, index) => {
+  const keyValPairs = lhs.reduce((obj: any, value: any, index: number) => {
+    console.log('obj', obj);
+    console.log('val', value);
     // check if obj[value] exists in obj
     // if true then compare the lift of each and keep the highest
     // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
@@ -32,10 +35,17 @@ const convertRulesToJson = storeId => {
 
     return obj;
   }, {});
+  console.log('keyValPairs type', typeof keyValPairs);
   return keyValPairs;
 };
 
-const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
+export const callR = (
+  path: string,
+  storeId: string,
+  confidence: string,
+  rulesAmount: string,
+  byItemName: string
+) => {
   return new Promise((resolve, reject) => {
     console.log('callR....');
     let err = false;
@@ -48,13 +58,13 @@ const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
       rulesAmount,
       byItemName,
     ]);
-    child.stderr.on('data', data => {
+    child.stderr.on('data', (data: any) => {
       console.log(data.toString());
     });
-    child.stdout.on('data', data => {
+    child.stdout.on('data', (data: any) => {
       console.log(data.toString());
     });
-    child.on('error', error => {
+    child.on('error', (error: any) => {
       err = true;
       reject(error);
     });
@@ -64,5 +74,3 @@ const callR = (path, storeId, confidence, rulesAmount, byItemName) => {
     });
   });
 };
-
-module.exports = { callR, convertRulesToJson, parseMenu };
