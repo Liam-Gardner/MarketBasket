@@ -2,7 +2,7 @@ import * as fs from 'fs';
 
 const spawn = require('child_process').spawn;
 
-export const parseMenu = (jsonMenu: string[]) => {
+export const parseMenu = (jsonMenu: { Name: string }[]) => {
   const menuStrings: string = jsonMenu.map(r => Object.values(r)).toString();
   const menuArray = menuStrings.split(',');
   const uniqueItems = [...new Set(menuArray)];
@@ -22,6 +22,8 @@ export const convertRulesToJson = (storeId: string) => {
   // need to
 
   const keyValPairs = lhs.reduce((obj: any, value: any, index: number) => {
+    console.log('obj', obj);
+    console.log('val', value);
     // check if obj[value] exists in obj
     // if true then compare the lift of each and keep the highest
     // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
@@ -33,6 +35,7 @@ export const convertRulesToJson = (storeId: string) => {
 
     return obj;
   }, {});
+  console.log('keyValPairs type', typeof keyValPairs);
   return keyValPairs;
 };
 
