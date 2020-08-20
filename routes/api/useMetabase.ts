@@ -124,7 +124,6 @@ router.post('/login-demo', (req, res) => {
 });
 
 router.post('/getMenuItems', (req, res) => {
-  console.log('getMenuItems route');
   const mbToken = req.query.mbToken as string;
   const storeId = req.query.storeId as string;
   const sqlQuery = constructMenuQuery(storeId);

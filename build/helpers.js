@@ -58,6 +58,8 @@ exports.convertRulesToJson = function (storeId) {
     console.log('json rules length: ', lhs.length);
     // need to
     var keyValPairs = lhs.reduce(function (obj, value, index) {
+        console.log('obj', obj);
+        console.log('val', value);
         // check if obj[value] exists in obj
         // if true then compare the lift of each and keep the highest
         // or a hacky-ish way. The first key will be the one we want to keep becuz they are already sorted by lift
@@ -67,6 +69,7 @@ exports.convertRulesToJson = function (storeId) {
         }
         return obj;
     }, {});
+    console.log('keyValPairs type', typeof keyValPairs);
     return keyValPairs;
 };
 exports.callR = function (path, storeId, confidence, rulesAmount, byItemName) {

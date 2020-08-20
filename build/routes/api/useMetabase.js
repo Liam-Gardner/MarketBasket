@@ -127,7 +127,6 @@ router.post('/login-demo', function (req, res) {
         .catch(function (err) { return res.status(500).send(err); });
 });
 router.post('/getMenuItems', function (req, res) {
-    console.log('getMenuItems route');
     var mbToken = req.query.mbToken;
     var storeId = req.query.storeId;
     var sqlQuery = metabase_1.constructMenuQuery(storeId);
