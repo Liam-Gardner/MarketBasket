@@ -81,7 +81,8 @@ router.post('/getRules', function (req, res) {
     var confidence = req.query.confidence;
     var rulesAmount = req.query.rulesAmount;
     var byItemName = req.query.byItemName;
-    var sqlQuery = metabase_1.constructRulesQuery(byItemName, storeId);
+    // const sqlQuery = constructRulesQuery(byItemName, storeId);
+    var sqlQuery = metabase_1.constructRulesTimeQuantityQuery(byItemName, storeId);
     metabase_1.sendMetabaseQuery(mbToken, sqlQuery, 'csv')
         .then(function (result) {
         fs.mkdir(storeId, { recursive: true }, function (error) {
@@ -94,6 +95,8 @@ router.post('/getRules', function (req, res) {
                     return console.log(err);
                 }
                 else {
+                    res.status(200).send('rules');
+                    return;
                     helpers_1.callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
                         .then(function (result) {
                         console.log('finished with callR: ');

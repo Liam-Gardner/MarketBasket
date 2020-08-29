@@ -10,6 +10,7 @@ import {
   constructRulesQuery,
   metabaseLogin,
   sendMetabaseQuery,
+  constructRulesTimeQuantityQuery,
 } from '../../models/metabase';
 import { callR, convertRulesToJson, parseMenu } from '../../helpers';
 
@@ -76,7 +77,8 @@ router.post('/getRules', (req, res) => {
   const rulesAmount = req.query.rulesAmount as string;
   const byItemName = req.query.byItemName as 'True' | 'False';
 
-  const sqlQuery = constructRulesQuery(byItemName, storeId);
+  // const sqlQuery = constructRulesQuery(byItemName, storeId);
+  const sqlQuery = constructRulesTimeQuantityQuery(byItemName, storeId);
 
   sendMetabaseQuery(mbToken, sqlQuery, 'csv')
     .then(result => {
@@ -89,6 +91,8 @@ router.post('/getRules', (req, res) => {
           if (err) {
             return console.log(err);
           } else {
+            res.status(200).send('rules');
+            return;
             callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
               .then(result => {
                 console.log('finished with callR: ');
