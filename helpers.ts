@@ -11,8 +11,6 @@ export const parseMenu = (jsonMenu: { Name: string }[]) => {
 
 export const convertRulesToJson = (storeId: string) => {
   let data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
-  if (!data) {
-  }
   let parsedJson = JSON.parse(data);
 
   // removes {} from lhs and rhs
