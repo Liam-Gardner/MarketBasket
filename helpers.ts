@@ -11,6 +11,8 @@ export const parseMenu = (jsonMenu: { Name: string }[]) => {
 
 export const convertRulesToJson = (storeId: string) => {
   let data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
+  if (!data) {
+  }
   let parsedJson = JSON.parse(data);
 
   // removes {} from lhs and rhs
@@ -19,7 +21,6 @@ export const convertRulesToJson = (storeId: string) => {
   let rhs = parsedJson.rhs.map((str: string) => str.replace(/[{}]/gm, ''));
 
   console.log('json rules length: ', lhs.length);
-  // need to
 
   const keyValPairs = lhs.reduce((obj: any, value: any, index: number) => {
     console.log('obj', obj);
@@ -73,4 +74,11 @@ export const callR = (
       resolve('done.'); // TODO: check exit code and resolve/reject accordingly
     });
   });
+};
+
+export const checkIfRulesExist = (storeId: string) => {
+  if (fs.existsSync(`${storeId}/${storeId}-rules.json`)) {
+    console.log('The path exists.');
+    return true;
+  } else return false;
 };
