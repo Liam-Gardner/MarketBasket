@@ -1,13 +1,14 @@
 {
   "name": "marketbasket",
   "version": "1.0.0",
-  "description": "Associaion analysis to provide rules using apriori algorithm",
-  "main": "app.js",
+  "description": "Association analysis to provide rules using apriori algorithm",
+  "main": "server.ts",
   "repository": "https://github.com/Liam-Gardner/MarketBasket.git",
   "author": "Liam Gardner <liam@flipdish.ie>",
   "license": "MIT",
   "private": true,
   "dependencies": {
+    "@types/express": "^4.17.7",
     "axios": "^0.19.2",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
@@ -18,15 +19,30 @@
     "superagent": "^5.2.2"
   },
   "nodemonConfig": {
+    "exec": "ts-node server.ts",
     "ignore": [
       "*.json",
-      "*.csv"
-    ]
+      "*.csv",
+      "./**/*.test.ts"
+    ],
+    "watch": [
+      "./"
+    ],
+    "ext": "ts"
   },
   "scripts": {
-    "start": "node server.js"
+    "build": "tsc",
+    "start": "node build/server.js",
+    "dev": "nodemon",
+    "test": "jest --watch"
   },
   "devDependencies": {
-    "nodemon": "^2.0.2"
+    "@types/jest": "^26.0.10",
+    "@types/node": "^14.0.27",
+    "jest": "^26.4.0",
+    "nodemon": "^2.0.2",
+    "ts-jest": "^26.2.0",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
   }
 }
