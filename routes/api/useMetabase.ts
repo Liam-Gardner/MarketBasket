@@ -12,7 +12,7 @@ import {
   sendMetabaseQuery,
   constructRulesTimeQuantityQuery,
 } from '../../models/metabase';
-import { callR, convertRulesToJson, parseMenu } from '../../helpers';
+import { callR, convertRulesToJson, parseMenu, checkIfRulesExist } from '../../helpers';
 
 const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
 
@@ -77,40 +77,43 @@ router.post('/getRules', (req, res) => {
   const rulesAmount = req.query.rulesAmount as string;
   const byItemName = req.query.byItemName as 'True' | 'False';
 
-  // const sqlQuery = constructRulesQuery(byItemName, storeId);
-  const sqlQuery = constructRulesTimeQuantityQuery(byItemName, storeId);
-
-  sendMetabaseQuery(mbToken, sqlQuery, 'csv')
-    .then(result => {
-      fs.mkdir(storeId, { recursive: true }, error => {
-        if (error) {
-          console.log('mkdir error', error);
-          res.sendStatus(500);
-        }
-        fs.writeFile(`${storeId}/${storeId}-data.csv`, result.data, err => {
-          if (err) {
-            return console.log(err);
-          } else {
-            res.status(200).send('rules');
-            return;
-            callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
-              .then(result => {
-                console.log('finished with callR: ');
-                const rules = convertRulesToJson(storeId);
-                res.status(200).send(rules);
-              })
-              .catch(error => {
-                console.log('Finished with callR - error: ', error);
-                res.status(500).send(error);
-              });
+  const rulesExist = checkIfRulesExist(storeId);
+  if (rulesExist) {
+    const rules = convertRulesToJson(storeId);
+    res.status(200).send(rules);
+  } else {
+    console.log('lets go to metabase!');
+    const sqlQuery = constructRulesQuery(byItemName, storeId);
+    sendMetabaseQuery(mbToken, sqlQuery, 'csv')
+      .then(result => {
+        fs.mkdir(storeId, { recursive: true }, error => {
+          if (error) {
+            console.log('mkdir error', error);
+            res.sendStatus(500);
           }
+          fs.writeFile(`${storeId}/${storeId}-data.csv`, result.data, err => {
+            if (err) {
+              return console.log(err);
+            } else {
+              callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
+                .then(result => {
+                  console.log('finished with callR: ');
+                  const rules = convertRulesToJson(storeId);
+                  res.status(200).send(rules);
+                })
+                .catch(error => {
+                  console.log('Finished with callR - error: ', error);
+                  res.status(500).send(error);
+                });
+            }
+          });
         });
+      })
+      .catch(error => {
+        console.log('Finished with MB Query - error: ', error);
+        res.status(500).send(error);
       });
-    })
-    .catch(error => {
-      console.log('Finished with MB Query - error: ', error);
-      res.status(500).send(error);
-    });
+  }
 });
 //#endregion
 
@@ -131,10 +134,12 @@ router.post('/getMenuItems', (req, res) => {
   const mbToken = req.query.mbToken as string;
   const storeId = req.query.storeId as string;
   const sqlQuery = constructMenuQuery(storeId);
-  sendMetabaseQuery(mbToken, sqlQuery, 'json').then(result => {
-    const menu = parseMenu(result.data);
-    res.status(200).send(menu);
-  });
+  sendMetabaseQuery(mbToken, sqlQuery, 'json')
+    .then(result => {
+      const menu = parseMenu(result.data);
+      res.status(200).send(menu);
+    })
+    .catch(err => res.status(500).send(err));
 });
 
 //#endregion
