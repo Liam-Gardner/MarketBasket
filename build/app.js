@@ -7,9 +7,11 @@ var express_1 = __importDefault(require("express"));
 var bodyParser = require('body-parser');
 var app = express_1.default();
 var morgan = require('morgan');
+var path = require('path');
 var api = require('./routes/api/apriori');
 var api_mb = require('./routes/api/useMetabase');
 var api_debug = require('./routes/api/debug');
+app.use('/plots', express_1.default.static(path.join(__dirname, 'plots')));
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
     extended: false,

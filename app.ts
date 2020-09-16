@@ -2,10 +2,13 @@ import express, { Request, Response, NextFunction } from 'express';
 const bodyParser = require('body-parser');
 const app = express();
 const morgan = require('morgan');
+const path = require('path');
 
 const api = require('./routes/api/apriori');
 const api_mb = require('./routes/api/useMetabase');
 const api_debug = require('./routes/api/debug');
+
+app.use('/plots', express.static(path.join(__dirname, 'plots')));
 
 app.use(morgan('dev'));
 app.use(
