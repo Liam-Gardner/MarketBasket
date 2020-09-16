@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { promises as fsPromise } from 'fs';
+import { Data, Rule } from './types';
 const spawn = require('child_process').spawn;
 
 export const parseMenu = (jsonMenu: { Name: string }[]) => {
@@ -7,24 +8,6 @@ export const parseMenu = (jsonMenu: { Name: string }[]) => {
   const menuArray = menuStrings.split(',');
   const uniqueItems = [...new Set(menuArray)];
   return uniqueItems;
-};
-
-type Data = {
-  lhs: string[];
-  rhs: string[];
-  support: number[];
-  confidence: number[];
-  lift: number[];
-  count: number[];
-};
-type Rule = {
-  lhs: string;
-  rhs: string;
-  support: number;
-  confidence: number;
-  lift: number;
-  count: number;
-  ruleNumber: number;
 };
 
 export const convertRulesToJson = (storeId: string): Rule[] => {
