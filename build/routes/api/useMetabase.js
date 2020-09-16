@@ -23,47 +23,54 @@ var express = __importStar(require("express"));
 var router = express.Router();
 var path = require('path');
 var env = require('process').env;
-var fs = __importStar(require("fs"));
 require('dotenv').config();
 var metabase_1 = require("../../models/metabase");
 var helpers_1 = require("../../helpers");
-var rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
-//#region original login
-router.post('/login', function (req, res) {
-    var _a = req.body, storeId = _a.storeId, confidence = _a.confidence, rulesAmount = _a.rulesAmount, byItemName = _a.byItemName, username = _a.username, password = _a.password;
-    metabase_1.metabaseLogin(username, password)
-        .then(function (result) {
-        // if succesful login to metabase
-        var mbToken = encodeURIComponent(result.data.id);
-        res.redirect(307, "/useMetabase/getRules?mbToken=" + mbToken + "&storeId=" + storeId + "&confidence=" + confidence + "&rulesAmount=" + rulesAmount + "&byItemName=" + byItemName);
-    })
-        .catch(function (err) { return res.status(500).send(err); });
+var rscriptRulesPath = path.resolve('./', 'R', 'useMetabase.R');
+var rscriptPlotsPath = path.resolve('./', 'R', 'getPlots.R');
+//#region  NEW FLOW (WIP) - Login to metabase, set cookie with mb token
+router.post('/metabase-login', function (req, res) {
+    var _a = req.body, username = _a.username, password = _a.password;
+    if (username === env.DBS_USER && password === env.DBS_PASS) {
+        metabase_1.metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
+            .then(function (result) {
+            var mbToken = encodeURIComponent(result.data.id);
+            res.cookie('mbToken', mbToken, {
+                expires: new Date(Date.now() + 900000),
+                httpOnly: false,
+            });
+            res.send('cookie set');
+        })
+            .catch(function (err) { return res.status(500).send(err); });
+    }
+    else {
+        res.status(401).send('Wrong password or username'); // TODO: handle this in FE
+    }
 });
 //#endregion
-//#region dbs logins
+//#region dbs
+// Login to Metabase then getRules
 router.post('/login-dbs', function (req, res) {
     var _a = req.body, storeId = _a.storeId, confidence = _a.confidence, rulesAmount = _a.rulesAmount, byItemName = _a.byItemName, username = _a.username, password = _a.password;
     if (username === env.DBS_USER && password === env.DBS_PASS) {
         metabase_1.metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
             .then(function (result) {
-            // if succesful login to metabase
             var mbToken = encodeURIComponent(result.data.id);
             res.redirect(307, "/useMetabase/getRules?mbToken=" + mbToken + "&storeId=" + storeId + "&confidence=" + confidence + "&rulesAmount=" + rulesAmount + "&byItemName=" + byItemName);
         })
             .catch(function (err) { return res.status(500).send(err); });
     }
     else {
-        res.status(401).send('Wrong password or username'); // handle this in FE
+        res.status(401).send('Wrong password or username'); // TODO: handle this in FE
     }
 });
+// Store demo page
 router.post('/login-dbs-demo', function (req, res) {
     var _a = req.body, storeId = _a.storeId, username = _a.username, password = _a.password;
     if (username === env.DBS_USER && password === env.DBS_PASS) {
         metabase_1.metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
             .then(function (result) {
-            // if succesful login to metabase
             var mbToken = encodeURIComponent(result.data.id);
-            console.log(mbToken);
             res.redirect(307, "/useMetabase/getMenuItems?mbToken=" + mbToken + "&storeId=" + storeId);
         })
             .catch(function (err) { return res.status(500).send(err); });
@@ -81,63 +88,117 @@ router.post('/getRules', function (req, res) {
     var confidence = req.query.confidence;
     var rulesAmount = req.query.rulesAmount;
     var byItemName = req.query.byItemName;
-    // const sqlQuery = constructRulesQuery(byItemName, storeId);
-    var sqlQuery = metabase_1.constructRulesTimeQuantityQuery(byItemName, storeId);
-    metabase_1.sendMetabaseQuery(mbToken, sqlQuery, 'csv')
-        .then(function (result) {
-        fs.mkdir(storeId, { recursive: true }, function (error) {
-            if (error) {
-                console.log('mkdir error', error);
+    var rulesExist = helpers_1.checkIfRulesExist(storeId);
+    var plotsExist = helpers_1.checkIfPlotsExist(storeId);
+    if (rulesExist) {
+        var rules_1 = helpers_1.convertRulesToJson(storeId);
+        if (plotsExist) {
+            res.status(200).send({
+                rules: rules_1,
+                itemsBoughtPlot: "/plots/" + storeId + "/itemsBoughtPlot.png",
+                popularTimesPlot: "/plots/" + storeId + "/popularTimesPlot.png",
+                topTenBestSellersPlot: "/plots/" + storeId + "/topTenBestSellersPlot.png",
+            });
+        }
+        else {
+            helpers_1.makeDirectory("plots/" + storeId, false)
+                .then(function () {
+                helpers_1.getPlotsR(rscriptPlotsPath, storeId).then(function () {
+                    res.status(200).send({
+                        rules: rules_1,
+                        itemsBoughtPlot: "/plots/" + storeId + "/itemsBoughtPlot.png",
+                        popularTimesPlot: "/plots/" + storeId + "/popularTimesPlot.png",
+                        topTenBestSellersPlot: "/plots/" + storeId + "/topTenBestSellersPlot.png",
+                    });
+                });
+            })
+                .catch(function (error) {
+                console.log('callRPlots error', error);
                 res.sendStatus(500);
-            }
-            fs.writeFile(storeId + "/" + storeId + "-data.csv", result.data, function (err) {
-                if (err) {
-                    return console.log(err);
-                }
-                else {
-                    res.status(200).send('rules');
-                    return;
-                    helpers_1.callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
-                        .then(function (result) {
-                        console.log('finished with callR: ');
+            })
+                .catch(function (error) {
+                console.log('plots mkdir error', error);
+                res.sendStatus(500);
+            });
+        }
+    }
+    else {
+        var sqlQuery = metabase_1.constructRulesTimeQuantityQuery(byItemName, storeId);
+        metabase_1.sendMetabaseQuery(mbToken, sqlQuery, 'csv')
+            .then(function (result) {
+            var data = result.data;
+            helpers_1.makeDirectory(storeId, true)
+                .then(function () {
+                helpers_1.writeFile(storeId + "/" + storeId + "-data.csv", data)
+                    .then(function () {
+                    helpers_1.getRulesR(rscriptRulesPath, storeId, confidence, rulesAmount, byItemName)
+                        .then(function () {
                         var rules = helpers_1.convertRulesToJson(storeId);
-                        res.status(200).send(rules);
+                        helpers_1.makeDirectory("plots/" + storeId, false)
+                            .then(function () {
+                            helpers_1.getPlotsR(rscriptPlotsPath, storeId)
+                                .then(function () {
+                                res.status(200).send({
+                                    rules: rules,
+                                    itemsBoughtPlot: "/plots/" + storeId + "/itemsBoughtPlot.png",
+                                    popularTimesPlot: "/plots/" + storeId + "/popularTimesPlot.png",
+                                    topTenBestSellersPlot: "/plots/" + storeId + "/topTenBestSellersPlot.png",
+                                });
+                            })
+                                .catch(function (error) {
+                                console.log('callRPlots error', error);
+                                res.sendStatus(500);
+                            });
+                        })
+                            .catch(function (error) {
+                            console.log('plots mkdir error', error);
+                            res.sendStatus(500);
+                        });
                     })
                         .catch(function (error) {
-                        console.log('Finished with callR - error: ', error);
+                        console.log('callR - error: ', error);
                         res.status(500).send(error);
                     });
-                }
+                })
+                    .catch(function (error) {
+                    console.log('storeId writefile error', error);
+                    res.sendStatus(500);
+                });
+            })
+                .catch(function (error) {
+                console.log('storeId mkDir error', error);
+                res.sendStatus(500);
             });
+        })
+            .catch(function (error) {
+            console.log('MB Query - error: ', error);
+            res.status(500).send(error);
         });
-    })
-        .catch(function (error) {
-        console.log('Finished with MB Query - error: ', error);
-        res.status(500).send(error);
-    });
+    }
 });
 //#endregion
 //#region GET Menu items for mock store
-router.post('/login-demo', function (req, res) {
-    var _a = req.body, storeId = _a.storeId, username = _a.username, password = _a.password;
-    metabase_1.metabaseLogin(username, password)
-        .then(function (result) {
-        // if succesful login to metabase
-        var mbToken = encodeURIComponent(result.data.id);
-        console.log(mbToken);
-        res.redirect(307, "/useMetabase/getMenuItems?mbToken=" + mbToken + "&storeId=" + storeId);
-    })
-        .catch(function (err) { return res.status(500).send(err); });
-});
 router.post('/getMenuItems', function (req, res) {
     var mbToken = req.query.mbToken;
     var storeId = req.query.storeId;
     var sqlQuery = metabase_1.constructMenuQuery(storeId);
-    metabase_1.sendMetabaseQuery(mbToken, sqlQuery, 'json').then(function (result) {
+    metabase_1.sendMetabaseQuery(mbToken, sqlQuery, 'json')
+        .then(function (result) {
         var menu = helpers_1.parseMenu(result.data);
         res.status(200).send(menu);
-    });
+    })
+        .catch(function (err) { return res.status(500).send(err); });
 });
 //#endregion
+//#endregion
+//#region test
+router.post('/getImages', function (req, res) {
+    var storeId = req.body.storeId;
+    res.status(200).send({
+        itemsBoughtPlot: "/plots/" + storeId + "/itemsBoughtPlot.png",
+        popularTimesPlot: "/plots/" + storeId + "/popularTimesPlot.png",
+        topTenBestSellersPlot: "/plots/" + storeId + "/topTenBestSellersPlot.png",
+    });
+});
 //#endregion
 module.exports = router;

@@ -109,7 +109,7 @@ exports.sendMetabaseQuery = function (mbToken, sqlQuery, format) { return __awai
             return [2 /*return*/, axios.post(url, qs.stringify({ query: sqlQuery }), config)];
         }
         catch (error) {
-            console.log(error);
+            console.log('sendMetabaseQuery', error);
         }
         return [2 /*return*/];
     });
