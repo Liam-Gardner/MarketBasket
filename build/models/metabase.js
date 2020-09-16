@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendMetabaseQuery = exports.constructRulesQuery = exports.constructMenuQuery = exports.metabaseLogin = void 0;
+exports.sendMetabaseQuery = exports.constructRulesTimeQuantityQuery = exports.constructRulesandTimeQuery = exports.constructRulesQuery = exports.constructMenuQuery = exports.metabaseLogin = void 0;
 var axios = require('axios').default;
 var qs = require('querystring');
 var env = require('process').env;
@@ -75,6 +75,26 @@ exports.constructRulesQuery = function (byItemName, storeId) {
     }
     return sqlQuery;
 };
+exports.constructRulesandTimeQuery = function (byItemName, storeId) {
+    var sqlQuery;
+    if (byItemName == 'True') {
+        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
+    }
+    else {
+        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.MenuItemId, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
+    }
+    return sqlQuery;
+};
+exports.constructRulesTimeQuantityQuery = function (byItemName, storeId) {
+    var sqlQuery;
+    if (byItemName == 'True') {
+        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name, o.TsOrderPlaced,oi.MenuItemId, COUNT(*) as 'Quantity' FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + " GROUP BY o.OrderId,mi.Name, o.TsOrderPlaced, oi.MenuItemId\"}}";
+    }
+    else {
+        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.MenuItemId, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
+    }
+    return sqlQuery;
+};
 exports.sendMetabaseQuery = function (mbToken, sqlQuery, format) { return __awaiter(void 0, void 0, void 0, function () {
     var url, config;
     return __generator(this, function (_a) {
@@ -89,7 +109,7 @@ exports.sendMetabaseQuery = function (mbToken, sqlQuery, format) { return __awai
             return [2 /*return*/, axios.post(url, qs.stringify({ query: sqlQuery }), config)];
         }
         catch (error) {
-            console.log(error);
+            console.log('sendMetabaseQuery', error);
         }
         return [2 /*return*/];
     });
