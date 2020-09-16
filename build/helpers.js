@@ -95,13 +95,13 @@ exports.convertRulesToJson = function (storeId) {
     var rules = [];
     var _loop_1 = function (i) {
         rule = {
+            number: i + 1,
             lhs: lhs[i],
             rhs: rhs[i],
-            support: support[i],
-            confidence: confidence[i],
             lift: lift[i],
+            confidence: confidence[i],
             count: count[i],
-            ruleNumber: i,
+            support: support[i],
         };
         var isDuplicate = rules.some(function (obj) { return obj.lhs === lhs[i]; });
         if (!isDuplicate) {

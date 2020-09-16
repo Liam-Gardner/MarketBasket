@@ -8,12 +8,12 @@ export type Data = {
   lift: number[];
   count: number[];
 };
-export type Rule = {
+type Rule = {
+  number: number;
   lhs: string;
   rhs: string;
-  support: number;
-  confidence: number;
   lift: number;
+  confidence: number;
+  support: number;
   count: number;
-  ruleNumber: number;
 };

@@ -22,13 +22,13 @@ export const convertRulesToJson = (storeId: string): Rule[] => {
   let rules = [] as Rule[];
   for (let i = 0; i < parsedJson.lhs.length; i++) {
     rule = {
+      number: i + 1,
       lhs: lhs[i],
       rhs: rhs[i],
-      support: support[i],
-      confidence: confidence[i],
       lift: lift[i],
+      confidence: confidence[i],
       count: count[i],
-      ruleNumber: i,
+      support: support[i],
     };
     let isDuplicate: boolean = rules.some(obj => obj.lhs === lhs[i]);
     if (!isDuplicate) {
