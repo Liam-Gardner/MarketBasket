@@ -79,6 +79,6 @@ export const sendMetabaseQuery = async (
   try {
     return axios.post(url, qs.stringify({ query: sqlQuery }), config);
   } catch (error) {
-    console.log(error);
+    console.log('sendMetabaseQuery', error);
   }
 };

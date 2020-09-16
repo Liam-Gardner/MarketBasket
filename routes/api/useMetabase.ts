@@ -2,8 +2,6 @@ import * as express from 'express';
 const router = express.Router();
 const path = require('path');
 const { env } = require('process');
-
-import * as fs from 'fs';
 require('dotenv').config();
 import {
   constructMenuQuery,
@@ -12,33 +10,47 @@ import {
   sendMetabaseQuery,
   constructRulesTimeQuantityQuery,
 } from '../../models/metabase';
-import { callR, convertRulesToJson, parseMenu, checkIfRulesExist } from '../../helpers';
+import {
+  checkIfPlotsExist,
+  checkIfRulesExist,
+  convertRulesToJson,
+  getPlotsR,
+  getRulesR,
+  makeDirectory,
+  parseMenu,
+  writeFile,
+} from '../../helpers';
 
-const rscriptPath = path.resolve('./', 'R', 'useMetabase.R');
+const rscriptRulesPath = path.resolve('./', 'R', 'useMetabase.R');
+const rscriptPlotsPath = path.resolve('./', 'R', 'getPlots.R');
 
-//#region original login
-router.post('/login', (req, res) => {
-  const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
-  metabaseLogin(username, password)
-    .then(result => {
-      // if succesful login to metabase
-      const mbToken = encodeURIComponent(result.data.id);
-      res.redirect(
-        307,
-        `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
-      );
-    })
-    .catch(err => res.status(500).send(err));
+//#region  NEW FLOW (WIP) - Login to metabase, set cookie with mb token
+router.post('/metabase-login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === env.DBS_USER && password === env.DBS_PASS) {
+    metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
+      .then(result => {
+        const mbToken = encodeURIComponent(result.data.id);
+        res.cookie('mbToken', mbToken, {
+          expires: new Date(Date.now() + 900000),
+          httpOnly: false,
+        });
+        res.send('cookie set');
+      })
+      .catch(err => res.status(500).send(err));
+  } else {
+    res.status(401).send('Wrong password or username'); // TODO: handle this in FE
+  }
 });
 //#endregion
 
-//#region dbs logins
+//#region dbs
+// Login to Metabase then getRules
 router.post('/login-dbs', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
   if (username === env.DBS_USER && password === env.DBS_PASS) {
     metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
       .then(result => {
-        // if succesful login to metabase
         const mbToken = encodeURIComponent(result.data.id);
         res.redirect(
           307,
@@ -47,18 +59,17 @@ router.post('/login-dbs', (req, res) => {
       })
       .catch(err => res.status(500).send(err));
   } else {
-    res.status(401).send('Wrong password or username'); // handle this in FE
+    res.status(401).send('Wrong password or username'); // TODO: handle this in FE
   }
 });
 
+// Store demo page
 router.post('/login-dbs-demo', (req, res) => {
   const { storeId, username, password } = req.body;
   if (username === env.DBS_USER && password === env.DBS_PASS) {
     metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
       .then(result => {
-        // if succesful login to metabase
         const mbToken = encodeURIComponent(result.data.id);
-        console.log(mbToken);
         res.redirect(307, `/useMetabase/getMenuItems?mbToken=${mbToken}&storeId=${storeId}`);
       })
       .catch(err => res.status(500).send(err));
@@ -78,58 +89,96 @@ router.post('/getRules', (req, res) => {
   const byItemName = req.query.byItemName as 'True' | 'False';
 
   const rulesExist = checkIfRulesExist(storeId);
+  const plotsExist = checkIfPlotsExist(storeId);
+
   if (rulesExist) {
     const rules = convertRulesToJson(storeId);
-    res.status(200).send(rules);
+    if (plotsExist) {
+      res.status(200).send({
+        rules,
+        itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
+        popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
+        topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
+      });
+    } else {
+      makeDirectory(`plots/${storeId}`, false)
+        .then(() => {
+          getPlotsR(rscriptPlotsPath, storeId).then(() => {
+            res.status(200).send({
+              rules,
+              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
+              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
+              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
+            });
+          });
+        })
+        .catch(error => {
+          console.log('callRPlots error', error);
+          res.sendStatus(500);
+        })
+        .catch(error => {
+          console.log('plots mkdir error', error);
+          res.sendStatus(500);
+        });
+    }
   } else {
-    console.log('lets go to metabase!');
-    const sqlQuery = constructRulesQuery(byItemName, storeId);
+    const sqlQuery = constructRulesTimeQuantityQuery(byItemName, storeId);
     sendMetabaseQuery(mbToken, sqlQuery, 'csv')
       .then(result => {
-        fs.mkdir(storeId, { recursive: true }, error => {
-          if (error) {
-            console.log('mkdir error', error);
+        const data = result.data;
+        makeDirectory(storeId, true)
+          .then(() => {
+            writeFile(`${storeId}/${storeId}-data.csv`, data)
+              .then(() => {
+                getRulesR(rscriptRulesPath, storeId, confidence, rulesAmount, byItemName)
+                  .then(() => {
+                    const rules = convertRulesToJson(storeId);
+                    makeDirectory(`plots/${storeId}`, false)
+                      .then(() => {
+                        getPlotsR(rscriptPlotsPath, storeId)
+                          .then(() => {
+                            res.status(200).send({
+                              rules,
+                              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
+                              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
+                              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
+                            });
+                          })
+                          .catch(error => {
+                            console.log('callRPlots error', error);
+                            res.sendStatus(500);
+                          });
+                      })
+                      .catch(error => {
+                        console.log('plots mkdir error', error);
+                        res.sendStatus(500);
+                      });
+                  })
+                  .catch(error => {
+                    console.log('callR - error: ', error);
+                    res.status(500).send(error);
+                  });
+              })
+              .catch(error => {
+                console.log('storeId writefile error', error);
+                res.sendStatus(500);
+              });
+          })
+          .catch(error => {
+            console.log('storeId mkDir error', error);
             res.sendStatus(500);
-          }
-          fs.writeFile(`${storeId}/${storeId}-data.csv`, result.data, err => {
-            if (err) {
-              return console.log(err);
-            } else {
-              callR(rscriptPath, storeId, confidence, rulesAmount, byItemName)
-                .then(result => {
-                  console.log('finished with callR: ');
-                  const rules = convertRulesToJson(storeId);
-                  res.status(200).send(rules);
-                })
-                .catch(error => {
-                  console.log('Finished with callR - error: ', error);
-                  res.status(500).send(error);
-                });
-            }
           });
-        });
       })
       .catch(error => {
-        console.log('Finished with MB Query - error: ', error);
+        console.log('MB Query - error: ', error);
         res.status(500).send(error);
       });
   }
 });
+
 //#endregion
 
 //#region GET Menu items for mock store
-router.post('/login-demo', (req, res) => {
-  const { storeId, username, password } = req.body;
-  metabaseLogin(username, password)
-    .then(result => {
-      // if succesful login to metabase
-      const mbToken = encodeURIComponent(result.data.id);
-      console.log(mbToken);
-      res.redirect(307, `/useMetabase/getMenuItems?mbToken=${mbToken}&storeId=${storeId}`);
-    })
-    .catch(err => res.status(500).send(err));
-});
-
 router.post('/getMenuItems', (req, res) => {
   const mbToken = req.query.mbToken as string;
   const storeId = req.query.storeId as string;
@@ -144,4 +193,16 @@ router.post('/getMenuItems', (req, res) => {
 
 //#endregion
 //#endregion
+
+//#region test
+router.post('/getImages', (req, res) => {
+  const storeId = req.body.storeId as string;
+  res.status(200).send({
+    itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
+    popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
+    topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
+  });
+});
+//#endregion
+
 module.exports = router;
