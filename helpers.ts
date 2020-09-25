@@ -98,6 +98,7 @@ export const getPlotsR = (path: string, storeId: string) => {
 };
 
 export const checkIfRulesExist = (storeId: string) => {
+  //TODO: add timelimit / override here so we can always get the latest rules if required
   if (fs.existsSync(`${storeId}/${storeId}-rules.json`)) {
     console.log('The path exists.');
     return true;

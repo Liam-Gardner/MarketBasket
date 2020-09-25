@@ -1,4 +1,3 @@
-# rem: with TRUE option below, #args[1] is the "--args" switch; skip it.
 args <- commandArgs(TRUE)
 storeId <- (args[2])
 
