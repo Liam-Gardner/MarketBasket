@@ -2,191 +2,137 @@
 
 # Description
 
-Node Server accepts physicalRestaurantId (Store) and opens an instance of R, passes the storeId to R and runs R script that:
+This is an api running on Node that returns asssociation rules and graphs for a given restaurant in the Flipdish database via a read only copy of the database accesed through Metabase.
 
-1. Connects to db
-2. Runs Stored Procedure to join tables to get all order items from that store and saves to table named after the store id
-3. Groups order items under one order_id and saves to csv file, again named after the store Id
-4. Converts the csv file to correct basket transaction format
-5. Runs Apriori algorithm and returns association rules
-6. rules are writtten to a file
-7. When the process is finished the node server responfs with the contents of the file or parses it to JSON maybe
+# Flow:
 
-# Connect to the database
+1. User enters metabase login details
 
-Setup DB connection on a Windows machine
+2. User enters storeId, confidence, rulesAmount, byItemName parameters
 
-Replace this with command line script
-https://stackoverflow.com/questions/13433371/install-an-odbc-connection-from-cmd-line
+3. Upon succesful login user is redirected to getRules route
 
-1. Create a data source in Windows by opening Data Sources(ODBC)
-2. Click Add
-3. Select SQL Server Native Client
-4. Give the data source a name (UAT in this example)
-5. Choose authentication
-6. Change default database to flipdishlocal
-7. Test connection
+4. We send a SQL query to metabase to join the right tables so that we get a dataset back containing the OrderId and OrderItem column.
 
-In R
+5. Metabase returns a .csv file with the dataset and we create a folder on the server using the storeId as its name as well as storing the dataset inside, also using the storeId.
 
-```
-uat_conn = odbcConnect("UAT")
-```
+6. Next we pass the storeId, confidence, rulesAmount, byItemName parameters to a function that will invoke an instance of R.
 
-Queries can now be run on the flipdishlocal database
-Example
+7. The R script will first install the necessary pacakges for assoication rules and visualisation. ('arules', 'arulesViz', 'tidyverse', etc.)
 
-```
-sqlQuery(uat_conn, "SELECT * FROM dbo.Orders")
-```
+8. We then group each order item under their relevant order id so that it can be stored as a transaction object.
+
+9. Now that it is in the correct format we can mine the data for association rules using the Apriori alogrithm.
+
+10. Once the alogrithm is complete we return the data as a JSON object to our Node server.
+
+11. Next we get 3 plots from our data using R - namely 'Busiest Hours', 'Best Selling Items', and 'How many items each customer buys'
+
+12. We can now return the rules and plots to the client.
 
 # SQL Joins
 
 Example using 2029 as StoreId
 
 ```
-SELECT o.OrderId, mi.MenuItemId 
-FROM PhysicalRestaurants pr 
-JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId 
-JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId 
-JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId 
+SELECT o.OrderId, mi.Name, mi.MenuItemId, o.TsOrderPlaced, oi.MenuItemId, COUNT(*) as 'Quantity'
+FROM PhysicalRestaurants pr
+JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId
+JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId
+JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId
 WHERE pr.PhysicalRestaurantId = 2029
+GROUP BY o.OrderId, mi.Name, mi.MenuItemId, o.TsOrderPlaced, oi.MenuItemId
 ```
 
-# Apriori Format
-THIS IS NOT NEEDED IF USING R CODE WITH APRIORI BUT MAYBE NEEDED IF USING FP-GROWTH
+# API
 
-```
-EXEC dbo.usp_CreateAprioriFormat
-```
-
-```
-CREATE PROC usp_CreateAprioriFormat
-AS
-SELECT DISTINCT tt2.OrderId,
-	SUBSTRING(
-		(
-			SELECT ','+tt1.Name AS [text()]
-			FROM OrdersByStore_tmp tt1
-			WHERE tt1.OrderId = tt2.OrderId
-			ORDER BY tt1.OrderId
-			FOR XML PATH ('')
-		), 2, 1000
-	) [OrderItems]
-	INTO ap_tmp
-FROM OrdersByStore_tmp tt2
-ORDER BY OrderId
-GO
-```
-
-
-# R Code
-Line by line explanation
-```
-
-```
-# API 
 ## storeId
+
 ##### String
+
 The physical restaraunt ID. Used in the SQL query and to dynamically name the rules and summary files.
 
 ## confidence
+
 ##### Number
-Specify the level of confidence you want for the rules that are returned. The higher the confidence the more likely a correct item will be suggested. 
+
+Specify the level of confidence you want for the rules that are returned. The higher the confidence the more likely a correct item will be suggested.
 
 ## rulesAmount
+
 ##### Number
-There may be thousands of rules found so use this to return for example the top 20 rules. Will return all rules if the number is out of bounds.
+
+There may be thousands of rules found so use this to return, for example, the top 20 rules. Will return all rules if the number is out of bounds.
 
 ## byItemName
+
 ##### Boolean
+
 The API returns the rules using itemId's. Set this to true if you prefer to have the item names instead.
 
-##### byItemName
-```
-{
-    "Curry Sauce": "Chicken Balls",
-    "Chicken Balls": "Curry Sauce",
-    "Double Pepperoni Deluxe Pizza": "Coke",
-    "Thai Yellow Curry": "Coke",
-    "Chicken": "Coke",
-    "Regular Burger": "Chips",
-    "Hot Dog": "Chilli Sauce",
-    "Chilli Sauce": "Hot Dog",
-    "Chicken,Thai Yellow Curry": "Coke",
-    "Coke,Thai Yellow Curry": "Chicken",
-    "Chicken,Coke": "Thai Yellow Curry",
-    "Hot Dog,Regular Burger": "Chilli Sauce",
-    "Chips,Hot Dog": "Chilli Sauce",
-    "Chilli Sauce,Regular Burger": "Hot Dog",
-    "Chilli Sauce,Chips": "Regular Burger"
-}
-```
+## Response
 
-##### by Id
+### rules
 
 ```
-{
-    "215": "72",
-    "267": "395",
-    "395": "267",
-    "1473": "4598",
-    "4598": "1473",
-    "18278,909": "6259",
-    "18278,6259": "909",
-    "6259,909": "18278",
-    "215,267": "395",
-    "267,72": "395",
-    "215,395": "267",
-    "395,72": "267",
-    "215,267,72": "395",
-    "215,395,72": "267",
-    "215,267,395": "72",
-    "267,395,72": "215"
-}
+ rules: [
+  {
+    number: 1,
+    lhs: 'Trio of Chocolate',
+    rhs: 'White Chocolate and Raspberry Mousse',
+    support: 0.00115673799884326,
+    confidence: 1,
+    lift: 864.5,
+    count: 4,
+  },
+  {
+    number: 2,
+    lhs: 'White Chocolate and Raspberry Mousse',
+    rhs: 'Trio of Chocolate',
+    support: 0.00115673799884326,
+    confidence: 1,
+    lift: 864.5,
+    count: 4,
+  },
+  {
+    number: 3,
+    lhs: 'Chilli Chicken Ramen,Thai Red Curry',
+    rhs: 'Chicken Egg Fried Rice',
+    support: 0.00115673799884326,
+    confidence: 1,
+    lift: 864.5,
+    count: 4,
+  },
+ ]
 ```
 
-# Front End Example
+### plots
+
 ```
-const getRecommendedItem = (rules, selectedItem) => {
-	let recommendedItem = rules[selectedItem]
-	if(recommendedItem){
-		return recommendedItem
-		}
-	else{return null}
-} 
+itemsBoughtPlot: "/plots/2029/itemsBoughtPlot.png"
+popularTimesPlot: "/plots/2029/popularTimesPlot.png"
+topTenBestSellersPlot: "/plots/2029/topTenBestSellersPlot.png"
 ```
 
-# Get Columns Names
-## Use this to make the service more generic
-```
-CREATE PROC usp_getTableColumnNames @TABLE_NAME varchar(max), @SCHEMA varchar(max)
-AS
-BEGIN
-	SELECT COLUMN_NAME,* 
-	FROM INFORMATION_SCHEMA.COLUMNS
-	WHERE TABLE_NAME = @TABLE_NAME AND TABLE_SCHEMA=@SCHEMA
-END
+# Known Issues
 
+## Missing Rules
 
-EXEC usp_getTableColumnNames @TABLE_NAME = 'Orders', @SCHEMA = 'dbo'
-```
-
-## Known Issues
-# Missing Rules
 If you receive less rules than expected it is likely that there are 2 keys that are the same when the lhs and the rhs arrays have passed through the reduce function. The first key and value will be stored in the object but its value will be overwritten if a key with the same name is added later in the function.
-The rule with the greater lift will win out. 
-# Rules by item name
-IF an menuitem name is seperated by commas like this : 'Sweet and Sour Chicken, Prawn or Tofu and Veg', a rule will be found that says 
-	{"Sweet and Sour Chicken" => "Prawn or Tofu and Veg"}
+The rule with the <b>greater lift will win out.</b>
+
+## Rules by item name
+
+IF an menuitem name is seperated by commas like this : 'Sweet and Sour Chicken, Prawn or Tofu and Veg', a rule will be found that says
+{"Sweet and Sour Chicken" => "Prawn or Tofu and Veg"}
 
 The pre processing trys to break up multilple order items in an order by comma. If the order is:
 Sweet and Sour Chicken, Prawn or Tofu and Veg
 Chips
 Coke
 
-It will be stored as  | Sweet and Sour Chicken | Prawn or Tofu and Veg | Chips | Coke
+It will be stored as | Sweet and Sour Chicken | Prawn or Tofu and Veg | Chips | Coke
 
 This is wrong. Sweet and Sour Chicken, Prawn or Tofu and Veg should be treated as one item.
 
-This won't happen when requesting menu item id's from the API 
+This won't happen when requesting menu item id's from the API
