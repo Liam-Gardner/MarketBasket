@@ -39,7 +39,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendMetabaseQuery = exports.constructRulesTimeQuantityQuery = exports.constructRulesandTimeQuery = exports.constructRulesQuery = exports.constructMenuQuery = exports.metabaseLogin = void 0;
 var axios = require('axios').default;
 var qs = require('querystring');
-var env = require('process').env;
 require('dotenv').config();
 exports.metabaseLogin = function (username, password) { return __awaiter(void 0, void 0, void 0, function () {
     var mbToken, error_1;

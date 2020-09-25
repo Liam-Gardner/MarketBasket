@@ -5,7 +5,6 @@ const { env } = require('process');
 require('dotenv').config();
 import {
   constructMenuQuery,
-  constructRulesQuery,
   metabaseLogin,
   sendMetabaseQuery,
   constructRulesTimeQuantityQuery,
@@ -24,28 +23,7 @@ import {
 const rscriptRulesPath = path.resolve('./', 'R', 'useMetabase.R');
 const rscriptPlotsPath = path.resolve('./', 'R', 'getPlots.R');
 
-//#region  NEW FLOW (WIP) - Login to metabase, set cookie with mb token
-router.post('/metabase-login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === env.DBS_USER && password === env.DBS_PASS) {
-    metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
-      .then(result => {
-        const mbToken = encodeURIComponent(result.data.id);
-        res.cookie('mbToken', mbToken, {
-          expires: new Date(Date.now() + 900000),
-          httpOnly: false,
-        });
-        res.send('cookie set');
-      })
-      .catch(err => res.status(500).send(err));
-  } else {
-    res.status(401).send('Wrong password or username'); // TODO: handle this in FE
-  }
-});
-//#endregion
-
-//#region dbs
-// Login to Metabase then getRules
+//#region Login to Metabase then getRules
 router.post('/login-dbs', (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
   if (username === env.DBS_USER && password === env.DBS_PASS) {
@@ -192,17 +170,6 @@ router.post('/getMenuItems', (req, res) => {
 });
 
 //#endregion
-//#endregion
-
-//#region test
-router.post('/getImages', (req, res) => {
-  const storeId = req.body.storeId as string;
-  res.status(200).send({
-    itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
-    popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
-    topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
-  });
-});
 //#endregion
 
 module.exports = router;

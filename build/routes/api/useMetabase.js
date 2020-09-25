@@ -28,28 +28,7 @@ var metabase_1 = require("../../models/metabase");
 var helpers_1 = require("../../helpers");
 var rscriptRulesPath = path.resolve('./', 'R', 'useMetabase.R');
 var rscriptPlotsPath = path.resolve('./', 'R', 'getPlots.R');
-//#region  NEW FLOW (WIP) - Login to metabase, set cookie with mb token
-router.post('/metabase-login', function (req, res) {
-    var _a = req.body, username = _a.username, password = _a.password;
-    if (username === env.DBS_USER && password === env.DBS_PASS) {
-        metabase_1.metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
-            .then(function (result) {
-            var mbToken = encodeURIComponent(result.data.id);
-            res.cookie('mbToken', mbToken, {
-                expires: new Date(Date.now() + 900000),
-                httpOnly: false,
-            });
-            res.send('cookie set');
-        })
-            .catch(function (err) { return res.status(500).send(err); });
-    }
-    else {
-        res.status(401).send('Wrong password or username'); // TODO: handle this in FE
-    }
-});
-//#endregion
-//#region dbs
-// Login to Metabase then getRules
+//#region Login to Metabase then getRules
 router.post('/login-dbs', function (req, res) {
     var _a = req.body, storeId = _a.storeId, confidence = _a.confidence, rulesAmount = _a.rulesAmount, byItemName = _a.byItemName, username = _a.username, password = _a.password;
     if (username === env.DBS_USER && password === env.DBS_PASS) {
@@ -190,15 +169,5 @@ router.post('/getMenuItems', function (req, res) {
         .catch(function (err) { return res.status(500).send(err); });
 });
 //#endregion
-//#endregion
-//#region test
-router.post('/getImages', function (req, res) {
-    var storeId = req.body.storeId;
-    res.status(200).send({
-        itemsBoughtPlot: "/plots/" + storeId + "/itemsBoughtPlot.png",
-        popularTimesPlot: "/plots/" + storeId + "/popularTimesPlot.png",
-        topTenBestSellersPlot: "/plots/" + storeId + "/topTenBestSellersPlot.png",
-    });
-});
 //#endregion
 module.exports = router;

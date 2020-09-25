@@ -4,9 +4,7 @@ const app = express();
 const morgan = require('morgan');
 const path = require('path');
 
-const api = require('./routes/api/apriori');
 const api_mb = require('./routes/api/useMetabase');
-const api_debug = require('./routes/api/debug');
 
 app.use('/plots', express.static(path.join(__dirname, 'plots')));
 
@@ -35,9 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/apriori', api);
 app.use('/useMetabase', api_mb);
-app.use('/debug', api_debug);
 
 //err handling
 app.use((req, res, next) => {
