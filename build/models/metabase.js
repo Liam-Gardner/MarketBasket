@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendMetabaseQuery = exports.constructRulesTimeQuantityQuery = exports.constructRulesandTimeQuery = exports.constructRulesQuery = exports.constructMenuQuery = exports.metabaseLogin = void 0;
+exports.sendMetabaseQuery = exports.constructRulesTimeQuantityQuery = exports.constructMenuQuery = exports.metabaseLogin = void 0;
 var axios = require('axios').default;
 var qs = require('querystring');
 require('dotenv').config();
@@ -64,33 +64,13 @@ exports.metabaseLogin = function (username, password) { return __awaiter(void 0,
 exports.constructMenuQuery = function (storeId) {
     return "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT mi.Name \n    FROM Menusections ms \n    JOIN Menuitems mi \n    ON ms.Menusectionid = mi.Menusectionid \n    WHERE ms.MenuId =\n    (SELECT MenuId \n    FROM PhysicalRestaurants \n    WHERE PhysicalRestaurantId = " + storeId + ")\"}}";
 };
-exports.constructRulesQuery = function (byItemName, storeId) {
-    var sqlQuery;
-    if (byItemName == 'True') {
-        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
-    }
-    else {
-        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
-    }
-    return sqlQuery;
-};
-exports.constructRulesandTimeQuery = function (byItemName, storeId) {
-    var sqlQuery;
-    if (byItemName == 'True') {
-        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
-    }
-    else {
-        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.MenuItemId, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
-    }
-    return sqlQuery;
-};
 exports.constructRulesTimeQuantityQuery = function (byItemName, storeId) {
     var sqlQuery;
     if (byItemName == 'True') {
         sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name, o.TsOrderPlaced,oi.MenuItemId, COUNT(*) as 'Quantity' FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + " GROUP BY o.OrderId,mi.Name, o.TsOrderPlaced, oi.MenuItemId\"}}";
     }
     else {
-        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.MenuItemId, o.TsOrderPlaced FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + "\"}}";
+        sqlQuery = "{\"database\": 2, \"type\": \"native\", \"native\": {\"query\": \"SELECT o.OrderId, mi.Name, mi.MenuItemId, o.TsOrderPlaced,oi.MenuItemId, COUNT(*) as 'Quantity' FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = " + storeId + " GROUP BY o.OrderId,mi.Name,mi.MenuItemId, o.TsOrderPlaced, oi.MenuItemId\"}}";
     }
     return sqlQuery;
 };
