@@ -51,7 +51,11 @@ a <- hms(as.character(retail$Time))
 retail$Time = hour(a)
 popularTimesPlot <- retail %>%
   ggplot(aes(x = Time)) +
-  geom_histogram(stat = "count", fill = "indianred")
+  geom_histogram(stat = "count", fill = "indianred") +
+   labs(x = "Time(24hr)",
+       y = "No. of Items") +
+  ggtitle("Busiest Hours") +
+  theme(plot.title = element_text(face = "plain", size = 12),, axis.title = element_text(face = "plain", size = 6))
 ggsave(createPlotFileNameAndPath(storeId, "popularTimesPlot.png"), plot = popularTimesPlot, device = 'png', width = 10, height = 5, units = "cm")
 
 # # Top 10 best sellers
@@ -64,6 +68,10 @@ tmp <- head(tmp, n = 10)
 topTenBestSellersPlot <- tmp %>%
   ggplot(aes(x = reorder(Name, count), y = count)) +
   geom_bar(stat = "identity", fill = "indian red") +
+  labs(x = "",
+       y = "No. of Items") +
+  ggtitle("Best selling items") +
+  theme(plot.title = element_text(face = "plain", size = 12), axis.title = element_text(face = "plain", size = 6), axis.text = element_text(face = "plain", size = 6)) +
   coord_flip()
 ggsave(createPlotFileNameAndPath(storeId, "topTenBestSellersPlot.png"), plot = topTenBestSellersPlot, device = 'png', width = 10, height = 5, units = "cm")
 
@@ -79,7 +87,7 @@ itemsCustomerBoughtCountPlot <- retail %>%
   labs(x = "No. of Items",
        y = "Count") +
   ggtitle("How many items does each customer buy?") +
-  theme(plot.title = element_text(face = "plain", size = 12)) +
+  theme(plot.title = element_text(face = "plain", size = 12), axis.title = element_text(face = "plain", size = 6)) +
 scale_x_continuous(breaks = seq(1, 10, by = 1)) +
 coord_cartesian(xlim = c(1, 10))
 
