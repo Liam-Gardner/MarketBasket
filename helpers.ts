@@ -98,6 +98,7 @@ export const getPlotsR = (path: string, storeId: string) => {
 };
 
 export const checkIfRulesExist = (storeId: string) => {
+  //TODO: add timelimit / override here so we can always get the latest rules if required
   if (fs.existsSync(`${storeId}/${storeId}-rules.json`)) {
     console.log('The path exists.');
     return true;
@@ -131,32 +132,3 @@ export const writeFile = async (filePath: string, data: any) => {
     throw err;
   }
 };
-
-//#region Test data
-const testData = {
-  lhs: [
-    'Trio of Chocolate',
-    'White Chocolate and Raspberry Mousse',
-    'Chilli Chicken Ramen,Thai Red Curry',
-    'Chilli Chicken Ramen,Coca-Cola',
-    'Coca-Cola,Thai Red Curry',
-  ],
-  rhs: [
-    'White Chocolate and Raspberry Mousse',
-    'Trio of Chocolate',
-    'Chicken Egg Fried Rice',
-    'Chicken Egg Fried Rice',
-    'Chicken Egg Fried Rice',
-  ],
-  support: [
-    0.00115673799884326,
-    0.00115673799884326,
-    0.00115673799884326,
-    0.00115673799884326,
-    0.00115673799884326,
-  ],
-  confidence: [1, 1, 1, 1, 1],
-  lift: [864.5, 864.5, 864.5, 864.5, 864.5],
-  count: [4, 4, 4, 4, 4],
-};
-//#endregion
