@@ -1,19 +1,15 @@
-import { parseMenu } from './helpers';
-
-const menuItems = [
-  { Name: 'Chicken Burger Meal' },
-  { Name: 'Cod Meal Deal' },
-  { Name: 'Chicken Burger Meal' },
-  { Name: 'Chicken Burger Meal' },
-  { Name: 'The Spicy Pitta' },
-  { Name: 'Cod Meal Deal' },
-  { Name: 'Cod Meal Deal' },
-];
-
-const uniqueMenuItems = ['Chicken Burger Meal', 'Cod Meal Deal', 'The Spicy Pitta'];
+import { convertRulesToJson, parseMenu } from './helpers';
+import { menuItems, Rules, uniqueMenuItems } from './testData/testData';
 
 describe('parse menu checks', () => {
-  test('returns unique menu items', () => {
+  it('returns unique menu items', () => {
     expect(parseMenu(menuItems)).toStrictEqual(uniqueMenuItems);
+  });
+});
+
+describe('convert rules to json', () => {
+  it('returns unique rules in order', () => {
+    expect(convertRulesToJson('test')).toStrictEqual(Rules);
+    expect(convertRulesToJson('test')).toHaveLength(11);
   });
 });
