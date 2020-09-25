@@ -2,7 +2,6 @@ import { MetaBaseQueryFormat } from '../types';
 
 const axios = require('axios').default;
 const qs = require('querystring');
-const { env } = require('process');
 require('dotenv').config();
 
 export const metabaseLogin = async (username: string, password: string) => {
