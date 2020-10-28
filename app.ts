@@ -6,7 +6,7 @@ const path = require('path');
 
 const api_mb = require('./routes/api/useMetabase');
 
-app.use('/plots', express.static(path.join(__dirname, 'plots')));
+app.use('/plots', express.static('./plots'));
 
 app.use(morgan('dev'));
 app.use(
