@@ -1,6 +1,6 @@
 {
   "name": "marketbasket",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Association analysis to provide rules using apriori algorithm",
   "main": "server.ts",
   "repository": "https://github.com/Liam-Gardner/MarketBasket.git",
