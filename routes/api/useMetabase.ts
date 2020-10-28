@@ -35,7 +35,26 @@ router.post('/login-dbs', (req, res) => {
           `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
         );
       })
-      .catch(err => res.status(500).send(err));
+      // IF MB IS DOWN USE THIS CODE!
+      .catch(err => {
+        const rulesExist = checkIfRulesExist(storeId);
+        const plotsExist = checkIfPlotsExist(storeId);
+        if (rulesExist) {
+          const rules = convertRulesToJson(storeId);
+          if (plotsExist) {
+            res.status(200).send({
+              rules,
+              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
+              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
+              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
+            });
+          } else {
+            res.status(500).send(err);
+          }
+        } else {
+          res.status(500).send(err);
+        }
+      });
   } else {
     res.status(401).send('Wrong password or username'); // TODO: handle this in FE
   }
