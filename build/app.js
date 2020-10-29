@@ -9,7 +9,7 @@ var app = express_1.default();
 var morgan = require('morgan');
 var path = require('path');
 var api_mb = require('./routes/api/useMetabase');
-app.use('/plots', express_1.default.static(path.join(__dirname, 'plots')));
+app.use('/plots', express_1.default.static('./plots'));
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
     extended: false,
