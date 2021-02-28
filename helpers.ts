@@ -46,6 +46,7 @@ export const getRulesR = (
   rulesAmount: string,
   byItemName: string
 ) => {
+  // TODO: rewrite as async
   return new Promise((resolve, reject) => {
     console.log('callR....');
     let err = false;
@@ -75,41 +76,9 @@ export const getRulesR = (
   });
 };
 
-export const getPlotsR = (path: string, storeId: string) => {
-  return new Promise((resolve, reject) => {
-    console.log('callRPlots....');
-    let err = false;
-    const child = spawn(process.env.RSCRIPT, ['--vanilla', path, '--args', storeId]);
-    child.stderr.on('data', (data: any) => {
-      console.log(data.toString());
-    });
-    child.stdout.on('data', (data: any) => {
-      console.log(data.toString());
-    });
-    child.on('error', (error: any) => {
-      err = true;
-      reject(error);
-    });
-    child.on('exit', () => {
-      if (err) return; // debounce - already rejected
-      resolve('done.'); // TODO: check exit code and resolve/reject accordingly
-    });
-  });
-};
-
 export const checkIfRulesExist = (storeId: string) => {
   //TODO: add timelimit / override here so we can always get the latest rules if required
   if (fs.existsSync(`${storeId}/${storeId}-rules.json`)) {
-    console.log('The path exists.');
-    return true;
-  } else {
-    return false;
-  }
-};
-
-export const checkIfPlotsExist = (storeId: string) => {
-  if (fs.existsSync(`plots/${storeId}`)) {
-    // TODO: check if folder contains images!
     console.log('The path exists.');
     return true;
   } else {

@@ -35,9 +35,10 @@ export const constructMenuQuery = (storeId: string) => {
 export const constructRulesTimeQuantityQuery = (byItemName: 'True' | 'False', storeId: string) => {
   let sqlQuery;
   if (byItemName == 'True') {
-    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name, o.TsOrderPlaced,oi.MenuItemId, COUNT(*) as 'Quantity' FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId} GROUP BY o.OrderId,mi.Name, o.TsOrderPlaced, oi.MenuItemId"}}`;
+    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name, oi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId}"}}`;
   } else {
-    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name, mi.MenuItemId, o.TsOrderPlaced,oi.MenuItemId, COUNT(*) as 'Quantity' FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId} GROUP BY o.OrderId,mi.Name,mi.MenuItemId, o.TsOrderPlaced, oi.MenuItemId"}}`;
+    // why mi.MenuItemId here and above oi.MenuItemId ?
+    sqlQuery = `{"database": 2, "type": "native", "native": {"query": "SELECT o.OrderId, mi.Name, mi.MenuItemId ,oi.MenuItemId FROM PhysicalRestaurants pr JOIN Orders o ON o.PhysicalRestaurantId = pr.PhysicalRestaurantId JOIN OrderItems oi ON oi.Order_OrderId = o.OrderId JOIN MenuItems mi ON mi.MenuItemId = oi.MenuItemId WHERE pr.PhysicalRestaurantId = ${storeId} "}}`;
   }
   return sqlQuery;
 };

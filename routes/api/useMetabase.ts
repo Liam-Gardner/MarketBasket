@@ -10,10 +10,8 @@ import {
   constructRulesTimeQuantityQuery,
 } from '../../models/metabase';
 import {
-  checkIfPlotsExist,
   checkIfRulesExist,
   convertRulesToJson,
-  getPlotsR,
   getRulesR,
   makeDirectory,
   parseMenu,
@@ -21,42 +19,32 @@ import {
 } from '../../helpers';
 
 const rscriptRulesPath = path.resolve('./', 'R', 'useMetabase.R');
-const rscriptPlotsPath = path.resolve('./', 'R', 'getPlots.R');
 
 //#region Login to Metabase then getRules
-router.post('/login-dbs', (req, res) => {
+router.post('/login', async (req, res) => {
   const { storeId, confidence, rulesAmount, byItemName, username, password } = req.body;
-  if (username === env.DBS_USER && password === env.DBS_PASS) {
-    metabaseLogin(env.METABASE_USER, env.METABASE_PASS)
-      .then(result => {
-        const mbToken = encodeURIComponent(result.data.id);
-        res.redirect(
-          307,
-          `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
-        );
-      })
-      // IF MB IS DOWN USE THIS CODE!
-      .catch(err => {
-        const rulesExist = checkIfRulesExist(storeId);
-        const plotsExist = checkIfPlotsExist(storeId);
-        if (rulesExist) {
-          const rules = convertRulesToJson(storeId);
-          if (plotsExist) {
-            res.status(200).send({
-              rules,
-              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
-              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
-              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
-            });
-          } else {
-            res.status(500).send(err);
-          }
-        } else {
-          res.status(500).send(err);
-        }
-      });
+  if (username === env.METABASE_USER && password === env.METABASE_PASS) {
+    try {
+      const result = await metabaseLogin(env.METABASE_USER, env.METABASE_PASS);
+      const mbToken = encodeURIComponent(result.data.id);
+      res.redirect(
+        307,
+        `/useMetabase/getRules?mbToken=${mbToken}&storeId=${storeId}&confidence=${confidence}&rulesAmount=${rulesAmount}&byItemName=${byItemName}`
+      );
+    } catch (err) {
+      // IF Metabase is down but you given the correct login we'll let u have the rules if they exist
+      const rulesExist = checkIfRulesExist(storeId);
+      if (rulesExist) {
+        const rules = convertRulesToJson(storeId);
+        res.status(200).send({
+          rules,
+        });
+      } else {
+        res.status(500).send(err);
+      }
+    }
   } else {
-    res.status(401).send('Wrong password or username'); // TODO: handle this in FE
+    res.status(401).send('<h3>Wrong password or username</h3>');
   }
 });
 
@@ -78,7 +66,7 @@ router.post('/login-dbs-demo', (req, res) => {
 
 //#region main redirected routes
 //#region GET RULES
-router.post('/getRules', (req, res) => {
+router.post('/getRules', async (req, res) => {
   const mbToken = req.query.mbToken as string;
   const storeId = req.query.storeId as string;
   const confidence = req.query.confidence as string;
@@ -86,90 +74,26 @@ router.post('/getRules', (req, res) => {
   const byItemName = req.query.byItemName as 'True' | 'False';
 
   const rulesExist = checkIfRulesExist(storeId);
-  const plotsExist = checkIfPlotsExist(storeId);
 
   if (rulesExist) {
     const rules = convertRulesToJson(storeId);
-    if (plotsExist) {
-      res.status(200).send({
-        rules,
-        itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
-        popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
-        topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
-      });
-    } else {
-      makeDirectory(`plots/${storeId}`, false)
-        .then(() => {
-          getPlotsR(rscriptPlotsPath, storeId).then(() => {
-            res.status(200).send({
-              rules,
-              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
-              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
-              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
-            });
-          });
-        })
-        .catch(error => {
-          console.log('callRPlots error', error);
-          res.sendStatus(500);
-        })
-        .catch(error => {
-          console.log('plots mkdir error', error);
-          res.sendStatus(500);
-        });
-    }
+    res.status(200).send({
+      rules,
+    });
   } else {
     const sqlQuery = constructRulesTimeQuantityQuery(byItemName, storeId);
-    sendMetabaseQuery(mbToken, sqlQuery, 'csv')
-      .then(result => {
-        const data = result.data;
-        makeDirectory(storeId, true)
-          .then(() => {
-            writeFile(`${storeId}/${storeId}-data.csv`, data)
-              .then(() => {
-                getRulesR(rscriptRulesPath, storeId, confidence, rulesAmount, byItemName)
-                  .then(() => {
-                    const rules = convertRulesToJson(storeId);
-                    makeDirectory(`plots/${storeId}`, false)
-                      .then(() => {
-                        getPlotsR(rscriptPlotsPath, storeId)
-                          .then(() => {
-                            res.status(200).send({
-                              rules,
-                              itemsBoughtPlot: `/plots/${storeId}/itemsBoughtPlot.png`,
-                              popularTimesPlot: `/plots/${storeId}/popularTimesPlot.png`,
-                              topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
-                            });
-                          })
-                          .catch(error => {
-                            console.log('callRPlots error', error);
-                            res.sendStatus(500);
-                          });
-                      })
-                      .catch(error => {
-                        console.log('plots mkdir error', error);
-                        res.sendStatus(500);
-                      });
-                  })
-                  .catch(error => {
-                    console.log('callR - error: ', error);
-                    res.status(500).send(error);
-                  });
-              })
-              .catch(error => {
-                console.log('storeId writefile error', error);
-                res.sendStatus(500);
-              });
-          })
-          .catch(error => {
-            console.log('storeId mkDir error', error);
-            res.sendStatus(500);
-          });
-      })
-      .catch(error => {
-        console.log('MB Query - error: ', error);
-        res.status(500).send(error);
+    try {
+      const { data } = await sendMetabaseQuery(mbToken, sqlQuery, 'csv');
+      await makeDirectory(storeId, true);
+      await writeFile(`${storeId}/${storeId}-data.csv`, data);
+      await getRulesR(rscriptRulesPath, storeId, confidence, rulesAmount, byItemName);
+      const rules = convertRulesToJson(storeId);
+      res.status(200).send({
+        rules,
       });
+    } catch (error) {
+      console.log('error getting rules', error);
+    }
   }
 });
 
