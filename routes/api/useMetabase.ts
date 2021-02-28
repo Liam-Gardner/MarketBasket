@@ -98,7 +98,7 @@ router.post('/getRules', (req, res) => {
         topTenBestSellersPlot: `/plots/${storeId}/topTenBestSellersPlot.png`,
       });
     } else {
-      makeDirectory(`plots/${storeId}`, false)
+      makeDirectory(`plots/${storeId}`, true)
         .then(() => {
           getPlotsR(rscriptPlotsPath, storeId).then(() => {
             res.status(200).send({
@@ -114,7 +114,7 @@ router.post('/getRules', (req, res) => {
           res.sendStatus(500);
         })
         .catch(error => {
-          console.log('plots mkdir error', error);
+          console.log('plots mkdir error rulesExist exist', error);
           res.sendStatus(500);
         });
     }
@@ -130,7 +130,7 @@ router.post('/getRules', (req, res) => {
                 getRulesR(rscriptRulesPath, storeId, confidence, rulesAmount, byItemName)
                   .then(() => {
                     const rules = convertRulesToJson(storeId);
-                    makeDirectory(`plots/${storeId}`, false)
+                    makeDirectory(`plots/${storeId}`, true)
                       .then(() => {
                         getPlotsR(rscriptPlotsPath, storeId)
                           .then(() => {
