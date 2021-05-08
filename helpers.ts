@@ -11,7 +11,7 @@ export const parseMenu = (jsonMenu: { Name: string }[]) => {
 };
 
 export const convertRulesToJson = (storeId: string): Rule[] => {
-  const data = fs.readFileSync(`${storeId}/${storeId}-rules.json`, 'utf8');
+  const data = fs.readFileSync(`rules/${storeId}/${storeId}-rules.json`, 'utf8');
   const parsedJson: Data = JSON.parse(data);
 
   const { support, confidence, lift, count } = parsedJson;
@@ -44,7 +44,6 @@ export const getRulesR = (
   storeId: string,
   confidence: string,
   rulesAmount: string,
-  byItemName: string
 ) => {
   return new Promise((resolve, reject) => {
     console.log('callR....');
@@ -56,30 +55,7 @@ export const getRulesR = (
       storeId,
       confidence,
       rulesAmount,
-      byItemName,
     ]);
-    child.stderr.on('data', (data: any) => {
-      console.log(data.toString());
-    });
-    child.stdout.on('data', (data: any) => {
-      console.log(data.toString());
-    });
-    child.on('error', (error: any) => {
-      err = true;
-      reject(error);
-    });
-    child.on('exit', () => {
-      if (err) return; // debounce - already rejected
-      resolve('done.'); // TODO: check exit code and resolve/reject accordingly
-    });
-  });
-};
-
-export const getPlotsR = (path: string, storeId: string) => {
-  return new Promise((resolve, reject) => {
-    console.log('callRPlots....');
-    let err = false;
-    const child = spawn(process.env.RSCRIPT, ['--vanilla', path, '--args', storeId]);
     child.stderr.on('data', (data: any) => {
       console.log(data.toString());
     });
@@ -99,17 +75,7 @@ export const getPlotsR = (path: string, storeId: string) => {
 
 export const checkIfRulesExist = (storeId: string) => {
   //TODO: add timelimit / override here so we can always get the latest rules if required
-  if (fs.existsSync(`${storeId}/${storeId}-rules.json`)) {
-    console.log('The path exists.');
-    return true;
-  } else {
-    return false;
-  }
-};
-
-export const checkIfPlotsExist = (storeId: string) => {
-  if (fs.existsSync(`plots/${storeId}`)) {
-    // TODO: check if folder contains images!
+  if (fs.existsSync(`rules/${storeId}/${storeId}-rules.json`)) {
     console.log('The path exists.');
     return true;
   } else {
