@@ -34,7 +34,7 @@ print(head(retail)) # type = list
 # This groups order items under one order_id and into one column seperated by a comma
 # Order_id      Name
 # 23423         Chicken Balls, Curry Sauce, Chips
-itemList <- ddply(retail, c("OrderId"), function(df1) paste(df1$Name, collapse = ","))
+itemList <- ddply(retail, c("OrderId"), function(df1) paste(df1$MenuItemId, collapse = ","))
 
 # drop column / rename
 itemList$OrderId <- NULL
@@ -63,8 +63,26 @@ rules <- sort(rules, by = sortBy, decreasing = TRUE)
 
 # Capture the rules
 # type must be set to list before storing the rules in it using inspect
-rulesAsDataFrame = data.frame(lhs = labels(lhs(rules)), rhs = labels(rhs(rules)), rules@quality)
-topRules <- rulesAsDataFrame[1:rulesAmount,]
+getRules <- function(rules, rulesAmount) {
+  r = list()
+  rulesAsList <- list(rules)
+  numOfRows <- length(rulesAsList[[1]])
+  print(typeof(r))
+  print(rulesAmount)
+  print(typeof(rulesAmount))
+  if (rulesAmount > numOfRows) {
+    r <- inspect(rules)
+    return(r)
+  } else {
+    print(typeof(r))
+    print(rulesAmount)
+    print(typeof(rulesAmount))
+    r <- inspect(rules[1:rulesAmount,])
+    return(r)
+  }
+}
+
+topRules <- getRules(rules, rulesAmount)
   
 
 #test print area
